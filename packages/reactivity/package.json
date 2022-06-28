@@ -1,0 +1,14 @@
+{
+  "name": "@plasticine-mini-vue-ts/reactivity",
+  "version": "1.0.0",
+  "description": "@plasticine-mini-vue-ts/reactivity",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo hello reactivity"
+  },
+  "keywords": [
+    "plasticine-mini-vue-ts"
+  ],
+  "author": "Plasticine",
+  "license": "ISC"
+}
