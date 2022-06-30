@@ -1,0 +1,20 @@
+{
+  "name": "@plasticine-mini-vue-ts/shared",
+  "version": "1.0.0",
+  "description": "internal utils shared across @plasticine-mini-vue-ts packages",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Plasticine-Yang/plasticine-mini-vue-ts.git",
+    "directory": "packages/shared"
+  },
+  "keywords": [
+    "plasticine-mini-vue-ts"
+  ],
+  "author": "Plasticine",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Plasticine-Yang/plasticine-mini-vue-ts/issues"
+  },
+  "homepage": "https://github.com/Plasticine-Yang/plasticine-mini-vue-ts/tree/main/packages/shared#readme"
+}
