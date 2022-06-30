@@ -1,4 +1,4 @@
-import { isObject } from '@plasticine-mini-vue-ts/shared'
+import { isObject, isSymbol } from '@plasticine-mini-vue-ts/shared'
 import { track, trigger } from './effect'
 import { reactive } from './reactive'
 
@@ -77,9 +77,24 @@ function deleteProperty(target: object, key: string | symbol): boolean {
   return result
 }
 
+/**
+ * @description 当使用 in 操作符判断对象是否拥有某个属性时 进行依赖收集
+ * @param target 函数依赖的目标对象
+ * @param key 目标对象的 key
+ */
+function has(target: object, key: string | symbol): boolean {
+  const result = Reflect.has(target, key)
+  if (!isSymbol(key)) {
+    track(target, key)
+  }
+
+  return result
+}
+
 // 处理可变对象的 ProxyHandler
 export const mutableHandlers: ProxyHandler<object> = {
   get,
   set,
-  deleteProperty
+  deleteProperty,
+  has
 }
