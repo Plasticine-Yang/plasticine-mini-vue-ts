@@ -60,8 +60,26 @@ function createSetter() {
   }
 }
 
+/**
+ * @description 监控删除响应式对象属性时触发依赖
+ * @param target 函数依赖的目标对象
+ * @param key 目标对象的 key
+ */
+function deleteProperty(target: object, key: string | symbol): boolean {
+  // 删除属性
+  const result = Reflect.deleteProperty(target, key)
+
+  if (result) {
+    // 成功删除属性后触发依赖
+    trigger(target, key)
+  }
+
+  return result
+}
+
 // 处理可变对象的 ProxyHandler
 export const mutableHandlers: ProxyHandler<object> = {
   get,
-  set
+  set,
+  deleteProperty
 }
