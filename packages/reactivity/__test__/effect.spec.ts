@@ -16,4 +16,14 @@ describe('reactivity/effect', () => {
     counter.num = 7
     expect(dummy).toBe(7)
   })
+
+  test('should observe multiple properties', () => {
+    let dummy
+    const counter = reactive({ num1: 0, num2: 0 })
+    effect(() => (dummy = counter.num1 + counter.num1 + counter.num2))
+
+    expect(dummy).toBe(0)
+    counter.num1 = counter.num2 = 7
+    expect(dummy).toBe(21)
+  })
 })
