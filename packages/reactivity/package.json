@@ -4,6 +4,7 @@
   "description": "@plasticine-mini-vue-ts/reactivity",
   "main": "index.js",
   "scripts": {
+    "dev": "jest -c ../../jest.config.js --watch",
     "test": "jest -c ../../jest.config.js"
   },
   "keywords": [
