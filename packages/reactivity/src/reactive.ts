@@ -1,5 +1,6 @@
 import { track, trigger } from './effect'
 
+export function reactive<T extends object>(target: T): T
 export function reactive(target: object) {
   return new Proxy(target, {
     get(target: object, key: string | symbol, receiver: object) {
