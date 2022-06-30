@@ -107,4 +107,26 @@ describe('reactivity/effect', () => {
     counter.num = 3
     expect(dummy).toBe(true)
   })
+
+  test('should observe inherited property accessors', () => {
+    let dummy, parentDummy, hiddenValue: any
+    const obj = reactive<{ prop?: number }>({})
+    const parent = reactive({
+      set prop(value: any) {
+        hiddenValue = value
+      },
+      get prop() {
+        return hiddenValue
+      }
+    })
+    Object.setPrototypeOf(obj, parent)
+
+    effect(() => (dummy = obj.prop))
+    effect(() => (parentDummy = parent.prop))
+    obj.prop = 4
+    expect(dummy).toBe(4)
+    parent.prop = 2
+    expect(dummy).toBe(2)
+    expect(parentDummy).toBe(2)
+  })
 })
