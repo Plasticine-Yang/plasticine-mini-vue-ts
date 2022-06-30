@@ -75,4 +75,20 @@ describe('reactivity/effect', () => {
     obj.prop = 12
     expect(dummy).toBe(true)
   })
+
+  test('should observe properties on the prototype chain', () => {
+    let dummy
+    const counter = reactive<{ num?: number }>({ num: 0 })
+    const parentCounter = reactive<{ num: number }>({ num: 2 })
+    Object.setPrototypeOf(counter, parentCounter)
+    effect(() => (dummy = counter.num))
+
+    expect(dummy).toBe(0)
+    delete counter.num
+    expect(dummy).toBe(2)
+    parentCounter.num = 4
+    expect(dummy).toBe(4)
+    counter.num = 3
+    expect(dummy).toBe(3)
+  })
 })
