@@ -1,4 +1,6 @@
+import { isObject } from '@plasticine-mini-vue-ts/shared'
 import { track, trigger } from './effect'
+import { reactive } from './reactive'
 
 // ProxyHandler 的 get 拦截
 const get = createGetter()
@@ -6,11 +8,8 @@ const get = createGetter()
 /**
  * @description 封装生成 ProxyHandler 的 getter
  */
-function createGetter() {
+function createGetter(shallow = false) {
   return function get(target: object, key: string | symbol, receiver: object) {
-    // 依赖收集
-    track(target, key)
-
     // 使用 Reflect.get 而不是直接 target[key] 有两个原因:
     // 1. 能够使用 receiver 处理访问器属性中的 this 指向问题
     //    如果访问器属性中通过 this 访问了对象的别的属性，由于
@@ -24,7 +23,22 @@ function createGetter() {
     //     return this.bar
     //   }
     // }
-    return Reflect.get(target, key, receiver)
+    const res = Reflect.get(target, key, receiver)
+
+    // 依赖收集
+    track(target, key)
+
+    if (shallow) {
+      // 如果不需要嵌套的响应式对象 就直接返回
+      return res
+    }
+
+    if (isObject(res)) {
+      // 如果对象属性，则将其也转成 reactive 对象
+      return reactive(res)
+    }
+
+    return res
   }
 }
 

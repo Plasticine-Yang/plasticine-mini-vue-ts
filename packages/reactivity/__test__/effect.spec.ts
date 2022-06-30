@@ -39,4 +39,14 @@ describe('reactivity/effect', () => {
     expect(dummy1).toBe(1)
     expect(dummy2).toBe(1)
   })
+
+  test('should observe nested properties', () => {
+    let dummy
+    const counter = reactive({ nested: { num: 0 } })
+    effect(() => (dummy = counter.nested.num))
+
+    expect(dummy).toBe(0)
+    counter.nested.num = 8
+    expect(dummy).toBe(8)
+  })
 })
