@@ -50,7 +50,7 @@ describe('reactivity/effect', () => {
     expect(dummy).toBe(8)
   })
 
-  test('should observe delete operation', () => {
+  test('should observe delete operations', () => {
     let dummy
     const obj = reactive<{
       prop?: string
