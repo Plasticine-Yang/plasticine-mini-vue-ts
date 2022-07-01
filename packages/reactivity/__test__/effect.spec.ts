@@ -214,4 +214,17 @@ describe('reactivity/effect', () => {
     expect(dummy).toBe(undefined)
     expect(hasDummy).toBe(false)
   })
+
+  test('should observe function valued properties', () => {
+    const oldFunc = () => {}
+    const newFunc = () => {}
+
+    let dummy
+    const obj = reactive({ func: oldFunc })
+    effect(() => (dummy = obj.func))
+
+    expect(dummy).toBe(oldFunc)
+    obj.func = newFunc
+    expect(dummy).toBe(newFunc)
+  })
 })
