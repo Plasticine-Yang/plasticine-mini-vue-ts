@@ -1,5 +1,11 @@
-import { isObject, isSymbol } from '@plasticine-mini-vue-ts/shared'
+import {
+  isArray,
+  isIntegerKey,
+  isObject,
+  isSymbol
+} from '@plasticine-mini-vue-ts/shared'
 import { track, trigger } from './effect'
+import { TriggerOpTypes } from './operations'
 import { reactive } from './reactive'
 
 // ProxyHandler 的 get 拦截
@@ -51,10 +57,22 @@ function createSetter() {
     value: unknown,
     receiver: object
   ) {
+    // 判断 target 是否已有 key
+    // 已有则是 SET 语义
+    // 未有则是 ADD 语义
+    const hadKey =
+      // 如果是数组 则 key 是索引，当尝试对超出数组长度的索引设置值时
+      // 会修改数组的 length 属性，这是一个 ADD 语义
+      isArray(target) && isIntegerKey(key) ? Number(key) < target.length : true
     const result = Reflect.set(target, key, value, receiver)
 
-    // 触发依赖
-    trigger(target, key)
+    if (!hadKey) {
+      // target 原本没有 key --> 以 ADD 语义触发依赖
+      trigger(target, TriggerOpTypes.ADD, key, value)
+    } else {
+      // target 原本就有 key --> 以 SET 语义触发依赖
+      trigger(target, TriggerOpTypes.SET, key, value)
+    }
 
     return result
   }
@@ -71,7 +89,7 @@ function deleteProperty(target: object, key: string | symbol): boolean {
 
   if (result) {
     // 成功删除属性后触发依赖
-    trigger(target, key)
+    trigger(target, TriggerOpTypes.DELETE, key)
   }
 
   return result

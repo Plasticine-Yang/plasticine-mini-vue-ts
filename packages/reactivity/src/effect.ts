@@ -1,4 +1,6 @@
+import { isArray, isIntegerKey } from '@plasticine-mini-vue-ts/shared'
 import { createDep, Dep } from './dep'
+import { TriggerOpTypes } from './operations'
 
 // 建立 target(响应式对象) -> key(对象的 key) -> dep(依赖的副作用函数集合) 映射关系
 // 使用 WeakMap 是为了防止用户不需要这个响应式对象的时候，响应式对象无法被 gc 回收的问题
@@ -67,7 +69,12 @@ export function track(target: object, key: unknown) {
  * @param target 以来函数触发的目标对象
  * @param key 触发的目标对象的 key
  */
-export function trigger(target: object, key: unknown) {
+export function trigger(
+  target: object,
+  type: TriggerOpTypes,
+  key: unknown,
+  newValue?: unknown
+) {
   // 从 targetMap 中取出 depsMap
   const depsMap = targetMap.get(target)
   if (!depsMap) {
@@ -75,8 +82,74 @@ export function trigger(target: object, key: unknown) {
     return
   }
 
-  // 从 depsMap 中根据 key 取出所有的副作用函数对象
-  let effects = depsMap.get(key)
-  // 遍历每个副作用函数对象 调用它们的 run 方法执行副作用函数 完成触发依赖
-  effects && effects.forEach(effect => effect.run())
+  // 存放所有待触发的依赖
+  let deps: (Dep | undefined)[] = []
+
+  if (key === 'length' && isArray(target)) {
+    // 也就是需要先从 depsMap 中找出:
+    // 1. `已经和数组长度关联的副作用函数依赖` -- 即 key 为 length 的依赖
+    // 2. const list = reactive(['Hello', 'World!'])
+    //    effect(() => (dummy = `${list[0]} the ${list[1]}`))
+    //    list[0] = 'Hi'
+    //    ==> dummy 应从 'Hello the World!' 变为 'Hi the World!'
+    //    此时 depsMap 中的 key 是 0 和 1, 而 newValue 是 0
+    //    应当将 key >= newValue 的副作用函数都执行
+
+    // 取出与 length 相关联的依赖添加到 deps 中
+    depsMap.forEach((dep, key) => {
+      if (key === 'length' || key >= (newValue as number)) {
+        deps.push(dep)
+      }
+    })
+  } else {
+    // 处理 SET | ADD | DELETE
+    if (key !== void 0) {
+      // key 存在则从 depsMap 中取出相应的依赖添加到待触发依赖 deps 中
+      deps.push(depsMap.get(key))
+    }
+
+    switch (type) {
+      case TriggerOpTypes.ADD:
+        // 当以 ADD 语义触发依赖 并且 target 是数组时
+        // 需要执行与 length 属性相关联的副作用函数
+        if (isArray(target) && isIntegerKey(key)) {
+          deps.push(depsMap.get('length'))
+        }
+        break
+      case TriggerOpTypes.SET:
+        break
+    }
+  }
+
+  if (deps.length === 1) {
+    // 只涉及一个对象的一个属性的依赖
+    if (deps[0]) {
+      triggerEffects(deps[0])
+    }
+  } else {
+    // 涉及一个对象的多个属性的依赖
+    const effects: ReactiveEffect[] = []
+    for (const dep of deps) {
+      if (dep) {
+        effects.push(...dep)
+      }
+    }
+
+    triggerEffects(effects)
+  }
+}
+
+/**
+ * @description 遍历每个副作用函数对象 调用它们的 run 方法执行副作用函数 完成触发依赖
+ * @param dep 依赖集合
+ */
+export function triggerEffects(dep: Dep | ReactiveEffect[]) {
+  const effects = isArray(dep) ? dep : [...dep]
+  for (const effect of effects) {
+    triggerEffect(effect)
+  }
+}
+
+function triggerEffect(effect: ReactiveEffect) {
+  effect.run()
 }
