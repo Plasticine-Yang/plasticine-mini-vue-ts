@@ -227,4 +227,23 @@ describe('reactivity/effect', () => {
     obj.func = newFunc
     expect(dummy).toBe(newFunc)
   })
+
+  /**
+   * 只要在 set 和 get 拦截中使用了 Reflect 并传入 receiver 参数
+   * 就可以让访问器属性 b 中的 this 正确地指向代理对象中的 a
+   */
+  test('should observe chained getters relying on this', () => {
+    const obj = reactive({
+      a: 1,
+      get b() {
+        return this.a
+      }
+    })
+
+    let dummy
+    effect(() => (dummy = obj.b))
+    expect(dummy).toBe(1)
+    obj.a++
+    expect(dummy).toBe(2)
+  })
 })
