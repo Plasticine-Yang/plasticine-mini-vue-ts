@@ -129,4 +129,18 @@ describe('reactivity/effect', () => {
     expect(dummy).toBe(2)
     expect(parentDummy).toBe(2)
   })
+
+  test('should observe function call chains', () => {
+    let dummy
+    const counter = reactive({ num: 0 })
+    effect(() => (dummy = getNum()))
+
+    function getNum() {
+      return counter.num
+    }
+
+    expect(dummy).toBe(0)
+    counter.num = 2
+    expect(dummy).toBe(2)
+  })
 })
