@@ -1,11 +1,12 @@
 import {
+  hasOwn,
   isArray,
   isIntegerKey,
   isObject,
   isSymbol
 } from '@plasticine-mini-vue-ts/shared'
-import { track, trigger } from './effect'
-import { TriggerOpTypes } from './operations'
+import { ITERATE_KEY, track, trigger } from './effect'
+import { TrackOpTypes, TriggerOpTypes } from './operations'
 import { reactive } from './reactive'
 
 // ProxyHandler 的 get 拦截
@@ -32,7 +33,7 @@ function createGetter(shallow = false) {
     const res = Reflect.get(target, key, receiver)
 
     // 依赖收集
-    track(target, key)
+    track(target, TrackOpTypes.GET, key)
 
     if (shallow) {
       // 如果不需要嵌套的响应式对象 就直接返回
@@ -63,7 +64,10 @@ function createSetter() {
     const hadKey =
       // 如果是数组 则 key 是索引，当尝试对超出数组长度的索引设置值时
       // 会修改数组的 length 属性，这是一个 ADD 语义
-      isArray(target) && isIntegerKey(key) ? Number(key) < target.length : true
+      isArray(target) && isIntegerKey(key)
+        ? Number(key) < target.length
+        : // 如果不是数组 就判断 key 是否是 target 自身已有的 不是的话应当走 ADD 语义
+          hasOwn(target, key)
     const result = Reflect.set(target, key, value, receiver)
 
     if (!hadKey) {
@@ -103,10 +107,15 @@ function deleteProperty(target: object, key: string | symbol): boolean {
 function has(target: object, key: string | symbol): boolean {
   const result = Reflect.has(target, key)
   if (!isSymbol(key)) {
-    track(target, key)
+    track(target, TrackOpTypes.HAS, key)
   }
 
   return result
+}
+
+function ownKeys(target: object): (string | symbol)[] {
+  track(target, TrackOpTypes.ITERATE, isArray(target) ? 'length' : ITERATE_KEY)
+  return Reflect.ownKeys(target)
 }
 
 // 处理可变对象的 ProxyHandler
@@ -114,5 +123,6 @@ export const mutableHandlers: ProxyHandler<object> = {
   get,
   set,
   deleteProperty,
-  has
+  has,
+  ownKeys
 }

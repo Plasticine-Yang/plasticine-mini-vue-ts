@@ -1,6 +1,6 @@
 import { isArray, isIntegerKey } from '@plasticine-mini-vue-ts/shared'
 import { createDep, Dep } from './dep'
-import { TriggerOpTypes } from './operations'
+import { TrackOpTypes, TriggerOpTypes } from './operations'
 
 // 建立 target(响应式对象) -> key(对象的 key) -> dep(依赖的副作用函数集合) 映射关系
 // 使用 WeakMap 是为了防止用户不需要这个响应式对象的时候，响应式对象无法被 gc 回收的问题
@@ -12,6 +12,8 @@ const targetMap = new WeakMap<any, KeyToDepMap>()
 
 // 当前激活的副作用函数对象 -- 在用户角度看来就是当前正在被执行的副作用函数
 let activeEffect: ReactiveEffect | undefined
+
+export const ITERATE_KEY = Symbol()
 
 /**
  * 将副作用函数的执行逻辑封装到类中处理，也方便扩展调度器 scheduler 等功能
@@ -41,7 +43,7 @@ export function effect<T = any>(fn: () => T) {
  * @param target 进行依赖收集的目标对象
  * @param key 依赖副作用函数所依赖的目标对象的 key
  */
-export function track(target: object, key: unknown) {
+export function track(target: object, type: TrackOpTypes, key: unknown) {
   // 1. 映射查找过程: target -> key -> dep
   // 从 targetMap 中找到 target 对应的 depsMap
   let depsMap = targetMap.get(target)
@@ -110,9 +112,13 @@ export function trigger(
 
     switch (type) {
       case TriggerOpTypes.ADD:
-        // 当以 ADD 语义触发依赖 并且 target 是数组时
-        // 需要执行与 length 属性相关联的副作用函数
-        if (isArray(target) && isIntegerKey(key)) {
+        if (!isArray(target)) {
+          // 当以 ADD 语义触发依赖时 会影响到 for in 的结果
+          // 所以需要把 ITERATE_KEY 对应的依赖执行一遍
+          deps.push(depsMap.get(ITERATE_KEY))
+        } else if (isIntegerKey(key)) {
+          // 当以 ADD 语义触发依赖 并且 target 是数组时
+          // 需要执行与 length 属性相关联的副作用函数
           deps.push(depsMap.get('length'))
         }
         break
