@@ -8,7 +8,7 @@ import {
 } from '@plasticine-mini-vue-ts/shared'
 import { ITERATE_KEY, track, trigger } from './effect'
 import { TrackOpTypes, TriggerOpTypes } from './operations'
-import { reactive } from './reactive'
+import { reactive, ReactiveFlags } from './reactive'
 
 // 由于 ios10.x 以上的版本中 Object.getOwnPropertyNames(Symbol) 是可以枚举 'arguments' 和 'caller' 的
 // 但是通过 Symbol.arguments 或 Symbol.caller 访问在 JS 的严格模式下是不允许的
@@ -28,6 +28,10 @@ const get = createGetter()
  */
 function createGetter(shallow = false) {
   return function get(target: object, key: string | symbol, receiver: object) {
+    if (key === ReactiveFlags.RAW) {
+      // 需要获取原始对象的时候 需要访问 RAW 属性 -- __v_raw
+      return target
+    }
     // 使用 Reflect.get 而不是直接 target[key] 有两个原因:
     // 1. 能够使用 receiver 处理访问器属性中的 this 指向问题
     //    如果访问器属性中通过 this 访问了对象的别的属性，由于

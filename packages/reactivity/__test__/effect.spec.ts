@@ -1,4 +1,5 @@
 import { effect, reactive } from '../src/index'
+import { toRaw } from '../src/reactive'
 
 describe('reactivity/effect', () => {
   test('should run the passed function once (wrapped by a effect)', () => {
@@ -278,5 +279,15 @@ describe('reactivity/effect', () => {
     expect(hasSpy).toHaveBeenCalledTimes(1)
     expect(getDummy).toBe('value')
     expect(hasDummy).toBe(true)
+  })
+
+  test('should not observe raw mutations', () => {
+    let dummy
+    const obj = reactive<{ prop?: string }>({})
+    effect(() => (dummy = toRaw(obj).prop))
+
+    expect(dummy).toBe(undefined)
+    obj.prop = 'value'
+    expect(dummy).toBe(undefined)
   })
 })
