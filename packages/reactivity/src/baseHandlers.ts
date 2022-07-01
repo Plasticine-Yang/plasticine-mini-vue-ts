@@ -1,4 +1,5 @@
 import {
+  hasChanged,
   hasOwn,
   isArray,
   isIntegerKey,
@@ -68,6 +69,8 @@ function createSetter() {
     value: unknown,
     receiver: object
   ) {
+    // 获取旧值用于比较 仅当新旧值不同时才调用 trigger 触发依赖
+    let oldValue = (target as any)[key]
     // 判断 target 是否已有 key
     // 已有则是 SET 语义
     // 未有则是 ADD 语义
@@ -83,7 +86,7 @@ function createSetter() {
     if (!hadKey) {
       // target 原本没有 key --> 以 ADD 语义触发依赖
       trigger(target, TriggerOpTypes.ADD, key, value)
-    } else {
+    } else if (hasChanged(value, oldValue)) {
       // target 原本就有 key --> 以 SET 语义触发依赖
       trigger(target, TriggerOpTypes.SET, key, value)
     }

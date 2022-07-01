@@ -261,4 +261,22 @@ describe('reactivity/effect', () => {
     obj.a++
     expect(dummy).toBe(2)
   })
+
+  test('should not observe set operations without a value change', () => {
+    let hasDummy, getDummy
+    const obj = reactive({ prop: 'value' })
+
+    const getSpy = jest.fn(() => (getDummy = obj.prop))
+    const hasSpy = jest.fn(() => (hasDummy = 'prop' in obj))
+    effect(getSpy)
+    effect(hasSpy)
+
+    expect(getDummy).toBe('value')
+    expect(hasDummy).toBe(true)
+    obj.prop = 'value'
+    expect(getSpy).toHaveReturnedTimes(1)
+    expect(hasSpy).toHaveBeenCalledTimes(1)
+    expect(getDummy).toBe('value')
+    expect(hasDummy).toBe(true)
+  })
 })
