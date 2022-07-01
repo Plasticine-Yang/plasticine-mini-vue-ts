@@ -122,6 +122,13 @@ export function trigger(
           deps.push(depsMap.get('length'))
         }
         break
+      case TriggerOpTypes.DELETE:
+        if (!isArray(target)) {
+          // 当以 DELETE 语义触发依赖时 会影响到 for in 循环
+          // 所以还需要将 ITERATE_KEY 相关联的依赖执行一遍
+          deps.push(depsMap.get(ITERATE_KEY))
+        }
+        break
       case TriggerOpTypes.SET:
         break
     }

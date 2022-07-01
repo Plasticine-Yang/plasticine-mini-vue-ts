@@ -88,11 +88,15 @@ function createSetter() {
  * @param key 目标对象的 key
  */
 function deleteProperty(target: object, key: string | symbol): boolean {
+  // 检查 key 是否在 target 中存在
+  // 是的话删除 key 之后会导致 target 的属性数量减少
+  // 会影响 for in 循环的结果
+  const hadKey = hasOwn(target, key)
   // 删除属性
   const result = Reflect.deleteProperty(target, key)
 
-  if (result) {
-    // 成功删除属性后触发依赖
+  if (result && hadKey) {
+    // 只有当被删除的属性是 target 自身的时候才会触发依赖
     trigger(target, TriggerOpTypes.DELETE, key)
   }
 
