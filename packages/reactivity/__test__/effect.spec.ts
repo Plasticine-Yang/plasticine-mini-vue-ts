@@ -246,4 +246,19 @@ describe('reactivity/effect', () => {
     obj.a++
     expect(dummy).toBe(2)
   })
+
+  test('should observe methods relying on this', () => {
+    const obj = reactive({
+      a: 1,
+      b() {
+        return this.a
+      }
+    })
+
+    let dummy
+    effect(() => (dummy = obj.b()))
+    expect(dummy).toBe(1)
+    obj.a++
+    expect(dummy).toBe(2)
+  })
 })
