@@ -198,4 +198,20 @@ describe('reactivity/effect', () => {
     delete numbers.num1
     expect(dummy).toBe(4)
   })
+
+  test('should observe symbol keyed properties', () => {
+    const key = Symbol('symbol keyed prop')
+    let dummy, hasDummy
+    const obj = reactive<{ [key]?: string }>({ [key]: 'value' })
+    effect(() => (dummy = obj[key]))
+    effect(() => (hasDummy = key in obj))
+
+    expect(dummy).toBe('value')
+    expect(hasDummy).toBe(true)
+    obj[key] = 'newValue'
+    expect(dummy).toBe('newValue')
+    delete obj[key]
+    expect(dummy).toBe(undefined)
+    expect(hasDummy).toBe(false)
+  })
 })

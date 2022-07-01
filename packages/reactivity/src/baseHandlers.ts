@@ -9,6 +9,16 @@ import { ITERATE_KEY, track, trigger } from './effect'
 import { TrackOpTypes, TriggerOpTypes } from './operations'
 import { reactive } from './reactive'
 
+// 由于 ios10.x 以上的版本中 Object.getOwnPropertyNames(Symbol) 是可以枚举 'arguments' 和 'caller' 的
+// 但是通过 Symbol.arguments 或 Symbol.caller 访问在 JS 的严格模式下是不允许的
+// 这里为了遵循 JS 的规范，需要将内建的 Symbol 属性屏蔽掉
+const builtInSymbols = new Set(
+  Object.getOwnPropertyNames(Symbol)
+    .filter(key => key !== 'arguments' && key !== 'caller')
+    .map(key => (Symbol as any)[key])
+    .filter(isSymbol)
+)
+
 // ProxyHandler 的 get 拦截
 const get = createGetter()
 
@@ -110,7 +120,7 @@ function deleteProperty(target: object, key: string | symbol): boolean {
  */
 function has(target: object, key: string | symbol): boolean {
   const result = Reflect.has(target, key)
-  if (!isSymbol(key)) {
+  if (!isSymbol(key) || !builtInSymbols.has(key)) {
     track(target, TrackOpTypes.HAS, key)
   }
 
