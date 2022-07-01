@@ -167,4 +167,18 @@ describe('reactivity/effect', () => {
     list[3] = 'Hello!'
     expect(dummy).toBe('Hello World!  Hello!')
   })
+
+  // sparse: adj. 稀疏的
+  test('should observe sparse array mutations', () => {
+    let dummy
+    const list = reactive<string[]>([])
+    list[1] = 'World!'
+    effect(() => (dummy = list.join(' ')))
+
+    expect(dummy).toBe(' World!')
+    list[0] = 'Hello'
+    expect(dummy).toBe('Hello World!')
+    list.pop()
+    expect(dummy).toBe('Hello')
+  })
 })
