@@ -290,4 +290,14 @@ describe('reactivity/effect', () => {
     obj.prop = 'value'
     expect(dummy).toBe(undefined)
   })
+
+  test('should not be triggered by raw mutations', () => {
+    let dummy
+    const obj = reactive<{ prop?: string }>({})
+    effect(() => (dummy = obj.prop))
+
+    expect(dummy).toBe(undefined)
+    toRaw(obj).prop = 'value'
+    expect(dummy).toBe(undefined)
+  })
 })
