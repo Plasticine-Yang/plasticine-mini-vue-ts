@@ -16,6 +16,10 @@ export interface Target {
   [ReactiveFlags.RAW]?: any
 }
 
+// reactive 对象缓存表 对同一个原始对象多次创建 reactive 对象时
+// 会进行缓存，如果已经存在则没必要再次创建，直接返回缓存结果
+export const reactiveMap = new WeakMap<Target, any>()
+
 /**
  * @description 将普通对象包装成响应式对象
  *
@@ -25,7 +29,7 @@ export interface Target {
  */
 export function reactive<T extends object>(target: T): T
 export function reactive(target: object) {
-  return createReactiveObject(target, mutableHandlers)
+  return createReactiveObject(target, mutableHandlers, reactiveMap)
 }
 
 /**
@@ -34,13 +38,26 @@ export function reactive(target: object) {
  * @param baseHandlers 使用的 ProxyHandler
  * @returns 响应式对象
  */
-function createReactiveObject(target: Target, baseHandlers: ProxyHandler<any>) {
-  // target 已经是 reactive 对象，不需要再创建代理对象 直接返回即可
+function createReactiveObject(
+  target: Target,
+  baseHandlers: ProxyHandler<any>,
+  proxyMap: WeakMap<Target, any>
+) {
+  // target 已经是代理对象，不需要再创建代理对象 直接返回即可
   if (target[ReactiveFlags.IS_REACTIVE]) {
     return target
   }
+  // 查找缓存 如果 target 已创建过代理对象，则直接返回缓存结果
+  const existingProxy = proxyMap.get(target)
+  if (existingProxy) {
+    // 缓存命中 -- 直接返回缓存结果
+    return existingProxy
+  }
 
   const proxy = new Proxy(target, baseHandlers)
+
+  // 创建了代理对象后要及时缓存
+  proxyMap.set(target, proxy)
 
   return proxy
 }
