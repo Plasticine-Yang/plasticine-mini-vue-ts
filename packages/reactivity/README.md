@@ -11,3 +11,8 @@
 - [x] 支持对`symbol`属性的响应式，并且排除掉内建的`JavaScript`严格模式下不可访问的`Symbol`属性的响应式监听
 - [x] 使用`Reflect.get`传递`receiver`，解决代理对象访问器属性中的`this`指向问题，不使用`Reflect`传递`receiver`，而是直接使用`target[key]`的方式的话会导致访问器属性中`this`指向原始对象，绕过代理对象的`get`拦截，从而无法正常收集依赖
 - [x] 响应式对象修改时，如果修改前后值没有发生变化不会触发相关依赖，避免不必要的性能开销
+
+### reactive
+
+- [x] `toRaw`: 添加一个`ReactiveFlags.RAW`特殊键，当访问代理对象的这个特殊键的时候，就返回原始对象`target`，不做任何处理，`toRaw`函数的实现中需要递归调用直到不再有这个特殊键属性为止才算真正获取到原始对象，如果本身就是个普通对象，那么访问这个特殊键的时候会得到`undefined`，这时候直接返回对象本身即可
+- [x] `isReactive`: 利用闭包的特性，在`createGetter`闭包内的`get`函数中拦截对`ReactiveFlags.IS_REACTIVE`属性的访问，根据闭包中的`isReadonly`判断对象是否是`reactive`创建的
