@@ -8,7 +8,7 @@ import {
 } from '@plasticine-mini-vue-ts/shared'
 import { ITERATE_KEY, track, trigger } from './effect'
 import { TrackOpTypes, TriggerOpTypes } from './operations'
-import { reactive, ReactiveFlags, Target } from './reactive'
+import { reactive, ReactiveFlags, Target, toRaw } from './reactive'
 
 // 由于 ios10.x 以上的版本中 Object.getOwnPropertyNames(Symbol) 是可以枚举 'arguments' 和 'caller' 的
 // 但是通过 Symbol.arguments 或 Symbol.caller 访问在 JS 的严格模式下是不允许的
@@ -73,7 +73,7 @@ function createGetter(isReadonly = false, shallow = false) {
 
 const set = createSetter()
 
-function createSetter() {
+function createSetter(shallow = false) {
   return function set(
     target: object,
     key: string | symbol,
@@ -82,6 +82,14 @@ function createSetter() {
   ) {
     // 获取旧值用于比较 仅当新旧值不同时才调用 trigger 触发依赖
     let oldValue = (target as any)[key]
+    // 对 value 和 oldValue 进行预处理 如果不是 shallow 的话就转成原始值
+    if (!shallow) {
+      value = toRaw(value)
+      oldValue = toRaw(oldValue)
+    } else {
+      // shllow 模式下，无论 value 是否是 reactive 的都可以直接设置值
+    }
+
     // 判断 target 是否已有 key
     // 已有则是 SET 语义
     // 未有则是 ADD 语义

@@ -76,6 +76,18 @@ describe('reactivity/reactive', () => {
     expect(observed2).toBe(observed)
   })
 
+  // 当把响应式对象赋值给响应式对象的属性的时候，原始对象的相应属性应当是对应的原始对象
+  // 而不是代理对象
+  test('should not pollute original object with Proxies', () => {
+    const original: any = { foo: 1 }
+    const original2: any = { bar: 2 }
+    const observed = reactive(original)
+    const observed2 = reactive(original2)
+    observed.bar = observed2
+    expect(observed.bar).toBe(observed2)
+    expect(original.bar).toBe(original2)
+  })
+
   test('toRaw', () => {
     const original = { foo: 1 }
     const observed = reactive(original)
