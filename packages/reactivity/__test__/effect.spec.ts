@@ -291,6 +291,28 @@ describe('reactivity/effect', () => {
     expect(dummy).toBe(undefined)
   })
 
+  test('should not be triggered by inherited raw setters', () => {
+    let dummy, parentDummy, hiddenValue: any
+    const obj = reactive<{ prop?: number }>({})
+    const parent = reactive({
+      set prop(value) {
+        hiddenValue = value
+      },
+      get prop() {
+        return hiddenValue
+      }
+    })
+    Object.setPrototypeOf(obj, parent)
+    effect(() => (dummy = obj.prop))
+    effect(() => (parentDummy = parent.prop))
+
+    expect(dummy).toBe(undefined)
+    expect(parentDummy).toBe(undefined)
+    toRaw(obj).prop = 4
+    expect(dummy).toBe(undefined)
+    expect(parentDummy).toBe(undefined)
+  })
+
   test('should not be triggered by raw mutations', () => {
     let dummy
     const obj = reactive<{ prop?: string }>({})
