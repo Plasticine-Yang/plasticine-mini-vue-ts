@@ -19,12 +19,36 @@ export const ITERATE_KEY = Symbol()
  * 将副作用函数的执行逻辑封装到类中处理，也方便扩展调度器 scheduler 等功能
  */
 export class ReactiveEffect<T = any> {
+  // 用于反向记录依赖集合，记录副作用函数出现在哪些对象属性的依赖集合中
+  // 主要用于解决分支切换，在每次执行副作用函数之前先将所有的依赖集合清空
+  // 再在执行副作用函数的时候重新收集依赖，解决分支切换时的依赖残留问题
+  deps: Dep[] = []
+
   constructor(public fn: () => T) {}
 
   run() {
+    // 执行副作用函数之前把其所有的依赖集合清空，防止分支切换的依赖遗留问题
+    cleanupEffect(this)
+
     // 执行副作用函数的时候 让 activeEffect 指向自己 从而能够被作为依赖收集
     activeEffect = this
     this.fn()
+  }
+}
+
+/**
+ * 在副作用函数的反向依赖集合中将副作用函数本身移除
+ * @param effect 副作用函数的 ReactiveEffect 对象
+ */
+function cleanupEffect(effect: ReactiveEffect) {
+  const { deps } = effect
+  if (deps.length) {
+    for (let i = 0; i < deps.length; i++) {
+      // 遍历副作用函数的所有依赖集合，将其自身从这些依赖集合中移除
+      deps[i].delete(effect)
+    }
+    // 移除完毕之后 deps 中没必要再保留这些反向存储的依赖集合引用
+    deps.length = 0
   }
 }
 
@@ -64,6 +88,9 @@ export function track(target: object, type: TrackOpTypes, key: unknown) {
   // 也就意味着一定是要有副作用函数访问到了响应式对象的属性才会触发
   // 所以 activeEffect 一定会指向那个副作用函数的，也就是不会为 undefined
   dep.add(activeEffect!)
+
+  // 反向记录副作用函数所在的依赖集合，用于分支切换之前进行清理，解决分支切换的依赖遗留问题
+  activeEffect?.deps.push(dep)
 }
 
 /**
@@ -148,7 +175,7 @@ export function trigger(
       }
     }
 
-    triggerEffects(effects)
+    triggerEffects(createDep(effects))
   }
 }
 
