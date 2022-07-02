@@ -8,7 +8,7 @@ import {
 } from '@plasticine-mini-vue-ts/shared'
 import { ITERATE_KEY, track, trigger } from './effect'
 import { TrackOpTypes, TriggerOpTypes } from './operations'
-import { reactive, ReactiveFlags } from './reactive'
+import { reactive, ReactiveFlags, Target } from './reactive'
 
 // 由于 ios10.x 以上的版本中 Object.getOwnPropertyNames(Symbol) 是可以枚举 'arguments' 和 'caller' 的
 // 但是通过 Symbol.arguments 或 Symbol.caller 访问在 JS 的严格模式下是不允许的
@@ -26,9 +26,16 @@ const get = createGetter()
 /**
  * @description 封装生成 ProxyHandler 的 getter
  */
-function createGetter(shallow = false) {
-  return function get(target: object, key: string | symbol, receiver: object) {
-    if (key === ReactiveFlags.RAW) {
+function createGetter(isReadonly = false, shallow = false) {
+  return function get(target: Target, key: string | symbol, receiver: object) {
+    if (key === ReactiveFlags.IS_REACTIVE) {
+      // 1. 当访问的 key 是 IS_REACTIVE 枚举值时
+      //    根据 isReadonly 的值进行判断
+      //    只要不是 readonly 就是 reactive
+      // 2. 由于 get 拦截函数是在 createGetter 闭包中创建的
+      //    所以一直保持着对 isReadonly 参数的访问能力
+      return !isReadonly
+    } else if (key === ReactiveFlags.RAW) {
       // 需要获取原始对象的时候 需要访问 RAW 属性 -- __v_raw
       return target
     }

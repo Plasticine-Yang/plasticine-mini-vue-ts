@@ -4,6 +4,7 @@ import { mutableHandlers } from './baseHandlers'
  * @description 响应式对象的类型
  */
 export const enum ReactiveFlags {
+  IS_REACTIVE = '__v_isReactive',
   RAW = '__v_raw'
 }
 
@@ -11,6 +12,7 @@ export const enum ReactiveFlags {
  * @description 代理对象接口
  */
 export interface Target {
+  [ReactiveFlags.IS_REACTIVE]?: boolean
   [ReactiveFlags.RAW]?: any
 }
 
@@ -36,6 +38,12 @@ function createReactiveObject(target: object, baseHandlers: ProxyHandler<any>) {
   const proxy = new Proxy(target, baseHandlers)
 
   return proxy
+}
+
+export function isReactive(value: unknown): boolean {
+  // The double exclamation point, or double bang,
+  // converts a truthy or falsy value to `true` or `false`
+  return !!(value && (value as Target)[ReactiveFlags.IS_REACTIVE])
 }
 
 /**
