@@ -62,6 +62,13 @@ describe('reactivity/reactive', () => {
     expect(isReactive(observed.foo)).toBe(true)
   })
 
+  test('observing already observed value should return same Proxy', () => {
+    const original = { foo: 1 }
+    const observed = reactive(original)
+    const observed2 = reactive(observed)
+    expect(observed2).toBe(observed)
+  })
+
   test('toRaw', () => {
     const original = { foo: 1 }
     const observed = reactive(original)

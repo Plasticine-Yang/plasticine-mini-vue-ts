@@ -34,7 +34,12 @@ export function reactive(target: object) {
  * @param baseHandlers 使用的 ProxyHandler
  * @returns 响应式对象
  */
-function createReactiveObject(target: object, baseHandlers: ProxyHandler<any>) {
+function createReactiveObject(target: Target, baseHandlers: ProxyHandler<any>) {
+  // target 已经是 reactive 对象，不需要再创建代理对象 直接返回即可
+  if (target[ReactiveFlags.IS_REACTIVE]) {
+    return target
+  }
+
   const proxy = new Proxy(target, baseHandlers)
 
   return proxy
