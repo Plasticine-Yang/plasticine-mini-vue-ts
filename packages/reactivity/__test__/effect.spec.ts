@@ -341,4 +341,29 @@ describe('reactivity/effect', () => {
     expect(dummy).toBe('other')
     expect(conditionalSpy).toHaveBeenCalledTimes(2)
   })
+
+  // 嵌套执行 effect 时，内层的 effect 会修改 activeEffect
+  // 导致内层执行完毕后，在外层 effect 的响应式数据无法被正确收集依赖
+  // 使用一个 effectStack 副作用函数栈来解决
+  test('effect 嵌套', () => {
+    let dummy1, dummy2
+    const obj = reactive({ foo: true, bar: true })
+    const effectFn2Spy = jest.fn(() => (dummy1 = obj.bar)).mockName('fn2')
+    const effectFn1Spy = jest
+      .fn(() => {
+        effect(effectFn2Spy)
+        dummy2 = obj.foo
+      })
+      .mockName('fn1')
+    effect(effectFn1Spy)
+
+    expect(dummy1).toBe(true)
+    expect(dummy2).toBe(true)
+    expect(effectFn1Spy).toHaveBeenCalledTimes(1)
+    expect(effectFn2Spy).toHaveBeenCalledTimes(1)
+    obj.foo = false
+    expect(dummy2).toBe(false)
+    expect(effectFn1Spy).toHaveBeenCalledTimes(2)
+    expect(effectFn2Spy).toHaveBeenCalledTimes(2)
+  })
 })

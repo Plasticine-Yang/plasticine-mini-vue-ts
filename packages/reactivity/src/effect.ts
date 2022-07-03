@@ -13,6 +13,10 @@ const targetMap = new WeakMap<any, KeyToDepMap>()
 // 当前激活的副作用函数对象 -- 在用户角度看来就是当前正在被执行的副作用函数
 let activeEffect: ReactiveEffect | undefined
 
+// 副作用函数栈 -- 保证嵌套执行 effect 时，内层 effect 不会覆盖外层 effect 的执行环境
+// 如果没有副作用函数栈，会导致外层 effect 中在内层 effect 之后的响应式数据的依赖收集无法正常工作
+const effectStack: ReactiveEffect[] = []
+
 export const ITERATE_KEY = Symbol()
 
 /**
@@ -32,7 +36,14 @@ export class ReactiveEffect<T = any> {
 
     // 执行副作用函数的时候 让 activeEffect 指向自己 从而能够被作为依赖收集
     activeEffect = this
+
+    // 调用副作用函数之前将当前的副作用函数压入栈中
+    effectStack.push(activeEffect)
     this.fn()
+    // 副作用函数执行完毕之后，将当前副作用函数弹出栈
+    effectStack.pop()
+    // 将 activeEffect 还原回指向执行嵌套 effect 之前的 effect
+    activeEffect = effectStack[effectStack.length - 1]
   }
 }
 
@@ -68,7 +79,7 @@ export function effect<T = any>(fn: () => T) {
  * @param key 依赖副作用函数所依赖的目标对象的 key
  */
 export function track(target: object, type: TrackOpTypes, key: unknown) {
-  // 1. 映射查找过程: target -> key -> dep
+  // 映射查找过程: target -> key -> dep
   // 从 targetMap 中找到 target 对应的 depsMap
   let depsMap = targetMap.get(target)
   if (!depsMap) {
@@ -83,14 +94,20 @@ export function track(target: object, type: TrackOpTypes, key: unknown) {
     depsMap.set(key, (dep = createDep()))
   }
 
-  // 2. 将当前激活的副作用函数对象添加到查找到的依赖集合 dep 中
-  // 可以断言为不是 undefined，因为能执行 track 就一定是触发了响应式对象的 getter
-  // 也就意味着一定是要有副作用函数访问到了响应式对象的属性才会触发
-  // 所以 activeEffect 一定会指向那个副作用函数的，也就是不会为 undefined
-  dep.add(activeEffect!)
+  trackEffects(dep)
+}
 
-  // 反向记录副作用函数所在的依赖集合，用于分支切换之前进行清理，解决分支切换的依赖遗留问题
-  activeEffect?.deps.push(dep)
+export function trackEffects(dep: Dep) {
+  // 如果已经收集过就不用再收集一次该依赖了
+  if (!dep.has(activeEffect!)) {
+    // 将当前激活的副作用函数对象添加到查找到的依赖集合 dep 中
+    // 可以断言为不是 undefined，因为能执行 track 就一定是触发了响应式对象的 getter
+    // 也就意味着一定是要有副作用函数访问到了响应式对象的属性才会触发
+    // 所以 activeEffect 一定会指向那个副作用函数的，也就是不会为 undefined
+    dep.add(activeEffect!)
+    // 反向记录副作用函数所在的依赖集合，用于分支切换之前进行清理，解决分支切换的依赖遗留问题
+    activeEffect?.deps.push(dep)
+  }
 }
 
 /**
@@ -191,5 +208,12 @@ export function triggerEffects(dep: Dep | ReactiveEffect[]) {
 }
 
 function triggerEffect(effect: ReactiveEffect) {
-  effect.run()
+  if (effect !== activeEffect) {
+    // 避免无限递归循环
+    // 当副作用函数中同时触发了响应式的对象属性的 get 和 set 操作时
+    // get 会触发 track，set 会触发 trigger
+    // trigger 的时候会取出副作用函数去执行，但是当前的副作用函数赋值操作还没完成
+    // 立刻又去执行下一个相同的副作用函数，如此重复导致递归调用自身
+    effect.run()
+  }
 }
