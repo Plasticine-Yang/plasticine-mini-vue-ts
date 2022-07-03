@@ -366,4 +366,10 @@ describe('reactivity/effect', () => {
     expect(effectFn1Spy).toHaveBeenCalledTimes(2)
     expect(effectFn2Spy).toHaveBeenCalledTimes(2)
   })
+
+  test('effect中同时出现get和set操作时，避免无限递归循环', () => {
+    const obj = reactive({ foo: 1 })
+    effect(() => obj.foo++)
+    expect(obj.foo).toBe(2)
+  })
 })
