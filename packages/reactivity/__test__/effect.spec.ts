@@ -408,4 +408,16 @@ describe('reactivity/effect', () => {
     // should have run
     expect(dummy).toBe(2)
   })
+
+  test('lazy', () => {
+    let dummy
+    const obj = reactive({ foo: 1 })
+    const runner = effect(() => (dummy = obj.foo), { lazy: true })
+
+    expect(dummy).toBe(undefined)
+    expect(runner()).toBe(1)
+    expect(dummy).toBe(1)
+    obj.foo = 2
+    expect(dummy).toBe(2)
+  })
 })

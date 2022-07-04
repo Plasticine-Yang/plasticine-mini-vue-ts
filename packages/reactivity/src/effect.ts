@@ -48,11 +48,13 @@ export class ReactiveEffect<T = any> {
 
     // 调用副作用函数之前将当前的副作用函数压入栈中
     effectStack.push(activeEffect)
-    this.fn()
+    const res = this.fn()
     // 副作用函数执行完毕之后，将当前副作用函数弹出栈
     effectStack.pop()
     // 将 activeEffect 还原回指向执行嵌套 effect 之前的 effect
     activeEffect = effectStack[effectStack.length - 1]
+
+    return res
   }
 }
 
@@ -76,6 +78,7 @@ function cleanupEffect(effect: ReactiveEffect) {
  * ReactiveEffect 对象的额外可选属性
  */
 interface ReactiveEffectOptions {
+  lazy?: boolean
   scheduler?: EffectScheduler
 }
 
@@ -97,7 +100,11 @@ export function effect<T = any>(
     extend(_effect, options)
   }
 
-  _effect.run()
+  if (!options || !options.lazy) {
+    // 没有传入配置项 或者 不是懒执行的话则立即执行副作用函数
+    _effect.run()
+  }
+
   // 将 ReactiveEffect 对象的 run 作为 runner 返回
   const runner = _effect.run.bind(_effect)
   return runner
