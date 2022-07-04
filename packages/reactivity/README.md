@@ -23,3 +23,9 @@
 - [x] `isReactive`: 利用闭包的特性，在`createGetter`闭包内的`get`函数中拦截对`ReactiveFlags.IS_REACTIVE`属性的访问，根据闭包中的`isReadonly`判断对象是否是`reactive`创建的
 - [x] 使用`ReactiveFlags.IS_REACTIVE`避免对已经是`reactive`的对象再次创建代理对象
 - [x] 使用`WeakMap`作为缓存表，防止对同一个原始对象多次创建代理对象，用`WeakMap`而不是`Map`是为了保证`gc`对原始对象的正常回收
+
+### computed
+
+- [x] `getter`懒执行，创建计算属性的时候不会立即调用`getter`，只会等到访问计算属性的时候才开始计算
+- [x] 使用缓存机制防止重复计算，在`ComputedRefImpl`中维护了一个缓存属性，会将每次计算的结果缓存下来，避免重复计算
+- [x] 计算属性的更新懒执行，当修改计算属性的`getter`中的响应式数据时，并不会立即执行计算属性的`getter`，只会在访问计算属性的时候开始计算
