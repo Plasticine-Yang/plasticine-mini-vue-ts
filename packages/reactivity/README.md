@@ -14,6 +14,8 @@
 - [x] 通过`ReactiveEffect`对象的`deps`属性反向记录依赖集合，在执行副作用函数之前将副作用函数从其相关依赖集合中移除，解决分支切换时导致的依赖遗留问题
 - [x] 当副作用函数中同时出现对响应式对象的`get`和`set`操作时，通过在`triggerEffect`中判断待执行的`effect`是否和当前激活的`activeEffect`相同来保证不会递归循环执行`effect`
 - [x] `effect`会返回一个`runner`，是对应的副作用函数的`ReactiveEffect`对象的`run`方法，能够允许用户手动执行副作用函数
+- [x] `scheduler`调度执行副作用函数，当传入调度器的时候不会直接执行副作用函数，将 `trigger` 触发依赖的控制权交给用户，可以结合 `effect` 返回的 `runner` 手动在调度器中决定何时触发副作用函数
+- [x] 支持`lazy`懒执行，当给`effect`的第二个参数传入了`lazy`配置项的时候，副作用函数不会立即执行
 
 ### reactive
 
