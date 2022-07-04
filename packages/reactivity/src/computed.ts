@@ -1,4 +1,5 @@
-import { effect, ReactiveEffect } from './effect'
+import { effect, ReactiveEffect, track, trigger } from './effect'
+import { TrackOpTypes, TriggerOpTypes } from './operations'
 
 export interface ComputedRef<T = any> {
   readonly value: T
@@ -16,11 +17,15 @@ class ComputedRefImpl<T> {
   constructor(getter: ComputedGetter<T>) {
     // 把 getter 作为副作用函数，创建一个 ReactiveEffect 来管理它
     this.effect = new ReactiveEffect(getter, () => {
-      // 使用调度器来更新 dirty
-      // 只要 effectedGetter 重新执行，就说明相关的响应式对象已经发生变化
-      // 所以数据肯定变成“脏”的了，但是并不需要立即执行 getter 获取新的计算属性值
-      // 因为 getter 的更新也要是懒执行的才行
-      this._dirty = true
+      if (!this._dirty) {
+        // 使用调度器来更新 dirty
+        // 只要尝试执行 this.effect，就说明相关的响应式对象已经发生变化
+        // 所以数据肯定变成“脏”的了
+        this._dirty = true
+
+        // 计算属性依赖的响应式数据变化时，手动调用 trigger 触发包裹计算属性的 effect
+        trigger(this, TriggerOpTypes.SET, 'value')
+      }
     })
   }
 
@@ -32,6 +37,8 @@ class ComputedRefImpl<T> {
       this._dirty = false
     }
 
+    // 访问计算属性的时候将当前的副作用函数作为计算属性的依赖收集起来
+    track(this, TrackOpTypes.GET, 'value')
     return this._value
   }
 }
