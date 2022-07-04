@@ -1,4 +1,4 @@
-import { isArray, isIntegerKey } from '@plasticine-mini-vue-ts/shared'
+import { extend, isArray, isIntegerKey } from '@plasticine-mini-vue-ts/shared'
 import { createDep, Dep } from './dep'
 import { TrackOpTypes, TriggerOpTypes } from './operations'
 
@@ -9,6 +9,8 @@ import { TrackOpTypes, TriggerOpTypes } from './operations'
 // 也无法被 gc 回收的问题，即内存泄漏
 type KeyToDepMap = Map<any, Dep>
 const targetMap = new WeakMap<any, KeyToDepMap>()
+
+type EffectScheduler = (...args: any[]) => any
 
 // 当前激活的副作用函数对象 -- 在用户角度看来就是当前正在被执行的副作用函数
 let activeEffect: ReactiveEffect | undefined
@@ -28,7 +30,14 @@ export class ReactiveEffect<T = any> {
   // 再在执行副作用函数的时候重新收集依赖，解决分支切换时的依赖残留问题
   deps: Dep[] = []
 
-  constructor(public fn: () => T) {}
+  constructor(
+    public fn: () => T,
+    // 调度器，用于调度执行
+    // 当 trigger 触发副作用函数重新执行时，调度器有能力决定
+    // 副作用函数执行的时机、次数以及方式
+    // 通过 effect 的 options 传递，若没传则默认为 null
+    public scheduler: EffectScheduler | null = null
+  ) {}
 
   run() {
     // 执行副作用函数之前把其所有的依赖集合清空，防止分支切换的依赖遗留问题
@@ -63,6 +72,13 @@ function cleanupEffect(effect: ReactiveEffect) {
   }
 }
 
+/**
+ * ReactiveEffect 对象的额外可选属性
+ */
+interface ReactiveEffectOptions {
+  scheduler?: EffectScheduler
+}
+
 // runner interface
 interface ReactiveEffectRunner<T = any> {
   (): T
@@ -72,8 +88,14 @@ interface ReactiveEffectRunner<T = any> {
  * @description 处理副作用函数
  * @param fn effectFn 副作用函数
  */
-export function effect<T = any>(fn: () => T): ReactiveEffectRunner {
+export function effect<T = any>(
+  fn: () => T,
+  options?: ReactiveEffectOptions
+): ReactiveEffectRunner {
   const _effect = new ReactiveEffect(fn)
+  if (options) {
+    extend(_effect, options)
+  }
 
   _effect.run()
   // 将 ReactiveEffect 对象的 run 作为 runner 返回
@@ -220,11 +242,18 @@ export function triggerEffects(dep: Dep | ReactiveEffect[]) {
 
 function triggerEffect(effect: ReactiveEffect) {
   if (effect !== activeEffect) {
-    // 避免无限递归循环
-    // 当副作用函数中同时触发了响应式的对象属性的 get 和 set 操作时
-    // get 会触发 track，set 会触发 trigger
-    // trigger 的时候会取出副作用函数去执行，但是当前的副作用函数赋值操作还没完成
-    // 立刻又去执行下一个相同的副作用函数，如此重复导致递归调用自身
-    effect.run()
+    if (effect.scheduler) {
+      // 调度执行 当传入调度器的时候不会直接执行副作用函数
+      // 将 trigger 触发依赖的控制权交给用户
+      // 可以结合 effect 返回的 runner 手动在调度器中决定何时触发副作用函数
+      effect.scheduler()
+    } else {
+      // 避免无限递归循环
+      // 当副作用函数中同时触发了响应式的对象属性的 get 和 set 操作时
+      // get 会触发 track，set 会触发 trigger
+      // trigger 的时候会取出副作用函数去执行，但是当前的副作用函数赋值操作还没完成
+      // 立刻又去执行下一个相同的副作用函数，如此重复导致递归调用自身
+      effect.run()
+    }
   }
 }
