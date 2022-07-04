@@ -372,4 +372,14 @@ describe('reactivity/effect', () => {
     effect(() => obj.foo++)
     expect(obj.foo).toBe(2)
   })
+
+  test('effect应当返回一个runner函数，即传给effect的副作用函数', () => {
+    const obj = reactive({ foo: 1 })
+    const runner = effect(() => obj.foo++)
+
+    expect(obj.foo).toBe(2)
+    expect(typeof runner).toBe('function')
+    runner()
+    expect(obj.foo).toBe(3)
+  })
 })

@@ -63,14 +63,22 @@ function cleanupEffect(effect: ReactiveEffect) {
   }
 }
 
+// runner interface
+interface ReactiveEffectRunner<T = any> {
+  (): T
+}
+
 /**
  * @description 处理副作用函数
  * @param fn effectFn 副作用函数
  */
-export function effect<T = any>(fn: () => T) {
+export function effect<T = any>(fn: () => T): ReactiveEffectRunner {
   const _effect = new ReactiveEffect(fn)
 
   _effect.run()
+  // 将 ReactiveEffect 对象的 run 作为 runner 返回
+  const runner = _effect.run.bind(_effect)
+  return runner
 }
 
 /**
@@ -79,22 +87,25 @@ export function effect<T = any>(fn: () => T) {
  * @param key 依赖副作用函数所依赖的目标对象的 key
  */
 export function track(target: object, type: TrackOpTypes, key: unknown) {
-  // 映射查找过程: target -> key -> dep
-  // 从 targetMap 中找到 target 对应的 depsMap
-  let depsMap = targetMap.get(target)
-  if (!depsMap) {
-    // 不存在说明是首次对该对象进行依赖收集，为其创建一个 depsMap
-    targetMap.set(target, (depsMap = new Map()))
-  }
+  // 只在 activeEffect 不为 undefined 的时候才进行依赖收集
+  if (activeEffect) {
+    // 映射查找过程: target -> key -> dep
+    // 从 targetMap 中找到 target 对应的 depsMap
+    let depsMap = targetMap.get(target)
+    if (!depsMap) {
+      // 不存在说明是首次对该对象进行依赖收集，为其创建一个 depsMap
+      targetMap.set(target, (depsMap = new Map()))
+    }
 
-  // 从 depsMap 中找到 target[key] 对应的依赖副作用函数 ReactiveEffect 对象
-  let dep = depsMap.get(key)
-  if (!dep) {
-    // 不存在说明这个 key 首次被访问，为其创建一个空的副作用函数对象集合
-    depsMap.set(key, (dep = createDep()))
-  }
+    // 从 depsMap 中找到 target[key] 对应的依赖副作用函数 ReactiveEffect 对象
+    let dep = depsMap.get(key)
+    if (!dep) {
+      // 不存在说明这个 key 首次被访问，为其创建一个空的副作用函数对象集合
+      depsMap.set(key, (dep = createDep()))
+    }
 
-  trackEffects(dep)
+    trackEffects(dep)
+  }
 }
 
 export function trackEffects(dep: Dep) {
