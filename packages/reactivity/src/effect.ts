@@ -172,16 +172,13 @@ export function trigger(
   let deps: (Dep | undefined)[] = []
 
   if (key === 'length' && isArray(target)) {
+    // 修改数组 length 时会导致索引大于 length 的那些元素被删除
+    // 比如 arr.length = 3, arr[2] = 4
+    // 现在修改 arr.length = 1，这会导致 arr[2] = undefined
+    // 那么原本依赖于 arr[2] 的副作用函数就应当被执行
     // 也就是需要先从 depsMap 中找出:
-    // 1. `已经和数组长度关联的副作用函数依赖` -- 即 key 为 length 的依赖
-    // 2. const list = reactive(['Hello', 'World!'])
-    //    effect(() => (dummy = `${list[0]} the ${list[1]}`))
-    //    list[0] = 'Hi'
-    //    ==> dummy 应从 'Hello the World!' 变为 'Hi the World!'
-    //    此时 depsMap 中的 key 是 0 和 1, 而 newValue 是 0
-    //    应当将 key >= newValue 的副作用函数都执行
-
-    // 取出与 length 相关联的依赖添加到 deps 中
+    // 1. `已经和数组 length 关联的副作用函数依赖` -- 因为修改了 length 属性
+    // 2. 索引大于 length 的那些副作用函数依赖也要执行
     depsMap.forEach((dep, key) => {
       if (key === 'length' || key >= (newValue as number)) {
         deps.push(dep)

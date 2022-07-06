@@ -420,4 +420,30 @@ describe('reactivity/effect', () => {
     obj.foo = 2
     expect(dummy).toBe(2)
   })
+
+  test('should trigger all effects when array length is set to 0', () => {
+    const observed: any = reactive([1])
+    let dummy, record
+    effect(() => {
+      dummy = observed.length
+    })
+    effect(() => {
+      record = observed[0]
+    })
+    expect(dummy).toBe(1)
+    expect(record).toBe(1)
+
+    observed[1] = 2
+    expect(observed[1]).toBe(2)
+    expect(dummy).toBe(2)
+    expect(record).toBe(1)
+
+    observed.unshift(3)
+    expect(dummy).toBe(3)
+    expect(record).toBe(3)
+
+    observed.length = 0
+    expect(dummy).toBe(0)
+    expect(record).toBeUndefined()
+  })
 })
