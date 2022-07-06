@@ -61,6 +61,11 @@ function createGetter(isReadonly = false, shallow = false) {
     // }
     const res = Reflect.get(target, key, receiver)
 
+    if (isSymbol(key) && builtInSymbols.has(key)) {
+      // 对于内建的 Symbol 属性不应当进行依赖收集
+      return res
+    }
+
     if (!isReadonly) {
       // readonly 对象不允许修改属性，所以没必要收集依赖
       // 依赖收集
@@ -154,6 +159,9 @@ function deleteProperty(target: object, key: string | symbol): boolean {
 function has(target: object, key: string | symbol): boolean {
   const result = Reflect.has(target, key)
   if (!isSymbol(key) || !builtInSymbols.has(key)) {
+    // 对于 Symbol 属性来说，不应当追踪那些 js 内建的 Symbol 属性
+    // 比如 Symbol.iterator 这种内建属性
+    // 这是为了避免发生意外的错误以及出于性能上的考虑
     track(target, TrackOpTypes.HAS, key)
   }
 

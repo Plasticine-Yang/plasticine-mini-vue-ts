@@ -216,6 +216,19 @@ describe('reactivity/effect', () => {
     expect(hasDummy).toBe(false)
   })
 
+  test('should not observe well-known symbol keyed properties', () => {
+    const key = Symbol.isConcatSpreadable
+    let dummy
+    const array: any = reactive([])
+    effect(() => (dummy = array[key]))
+
+    expect(array[key]).toBe(undefined)
+    expect(dummy).toBe(undefined)
+    array[key] = true
+    expect(array[key]).toBe(true)
+    expect(dummy).toBe(undefined)
+  })
+
   test('should observe function valued properties', () => {
     const oldFunc = () => {}
     const newFunc = () => {}
