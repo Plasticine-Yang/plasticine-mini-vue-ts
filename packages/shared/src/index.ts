@@ -11,6 +11,8 @@ export const isString = (val: unknown): val is string => typeof val === 'string'
 export const isSymbol = (val: unknown): val is symbol => typeof val === 'symbol'
 export const isObject = (val: unknown): val is Record<any, any> =>
   val !== null && typeof val === 'object'
+export const isFunction = (val: unknown): val is Function =>
+  typeof val === 'function'
 
 /**
  * 主要用于判断访问数组对象时的 key 是否是整数 是的话就意味着是以索引的方式访问
