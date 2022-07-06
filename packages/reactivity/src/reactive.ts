@@ -1,10 +1,11 @@
-import { mutableHandlers } from './baseHandlers'
+import { mutableHandlers, shallowReactiveHandlers } from './baseHandlers'
 
 /**
  * @description 响应式对象的类型
  */
 export const enum ReactiveFlags {
   IS_REACTIVE = '__v_isReactive',
+  IS_SHALLOW = '__v_isShallow',
   RAW = '__v_raw'
 }
 
@@ -13,12 +14,14 @@ export const enum ReactiveFlags {
  */
 export interface Target {
   [ReactiveFlags.IS_REACTIVE]?: boolean
+  [ReactiveFlags.IS_SHALLOW]?: boolean
   [ReactiveFlags.RAW]?: any
 }
 
 // reactive 对象缓存表 对同一个原始对象多次创建 reactive 对象时
 // 会进行缓存，如果已经存在则没必要再次创建，直接返回缓存结果
 export const reactiveMap = new WeakMap<Target, any>()
+export const shallowReactiveMap = new WeakMap<Target, any>()
 
 /**
  * @description 将普通对象包装成响应式对象
@@ -30,6 +33,14 @@ export const reactiveMap = new WeakMap<Target, any>()
 export function reactive<T extends object>(target: T): T
 export function reactive(target: object) {
   return createReactiveObject(target, mutableHandlers, reactiveMap)
+}
+
+export function shallowReactive<T extends object>(target: T): T {
+  return createReactiveObject(
+    target,
+    shallowReactiveHandlers,
+    shallowReactiveMap
+  )
 }
 
 /**
@@ -66,6 +77,10 @@ export function isReactive(value: unknown): boolean {
   // The double exclamation point, or double bang,
   // converts a truthy or falsy value to `true` or `false`
   return !!(value && (value as Target)[ReactiveFlags.IS_REACTIVE])
+}
+
+export function isShallow(value: unknown): boolean {
+  return !!(value && (value as Target)[ReactiveFlags.IS_SHALLOW])
 }
 
 /**

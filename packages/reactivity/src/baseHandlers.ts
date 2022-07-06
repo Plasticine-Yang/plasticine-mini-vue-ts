@@ -1,4 +1,5 @@
 import {
+  extend,
   hasChanged,
   hasOwn,
   isArray,
@@ -22,6 +23,7 @@ const builtInSymbols = new Set(
 
 // ProxyHandler 的 get 拦截
 const get = createGetter()
+const shallowGet = createGetter(false, true)
 
 /**
  * @description 封装生成 ProxyHandler 的 getter
@@ -35,6 +37,8 @@ function createGetter(isReadonly = false, shallow = false) {
       // 2. 由于 get 拦截函数是在 createGetter 闭包中创建的
       //    所以一直保持着对 isReadonly 参数的访问能力
       return !isReadonly
+    } else if (key === ReactiveFlags.IS_SHALLOW) {
+      return shallow
     } else if (key === ReactiveFlags.RAW) {
       // 需要获取原始对象的时候 需要访问 RAW 属性 -- __v_raw
       return target
@@ -72,6 +76,7 @@ function createGetter(isReadonly = false, shallow = false) {
 }
 
 const set = createSetter()
+const shallowSet = createSetter(true)
 
 function createSetter(shallow = false) {
   return function set(
@@ -162,3 +167,8 @@ export const mutableHandlers: ProxyHandler<object> = {
   has,
   ownKeys
 }
+
+export const shallowReactiveHandlers = extend({}, mutableHandlers, {
+  get: shallowGet,
+  set: shallowSet
+})
