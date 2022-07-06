@@ -9,7 +9,7 @@ import {
 } from '@plasticine-mini-vue-ts/shared'
 import { ITERATE_KEY, track, trigger } from './effect'
 import { TrackOpTypes, TriggerOpTypes } from './operations'
-import { reactive, ReactiveFlags, Target, toRaw } from './reactive'
+import { reactive, ReactiveFlags, readonly, Target, toRaw } from './reactive'
 
 // 由于 ios10.x 以上的版本中 Object.getOwnPropertyNames(Symbol) 是可以枚举 'arguments' 和 'caller' 的
 // 但是通过 Symbol.arguments 或 Symbol.caller 访问在 JS 的严格模式下是不允许的
@@ -24,6 +24,7 @@ const builtInSymbols = new Set(
 // ProxyHandler 的 get 拦截
 const get = createGetter()
 const shallowGet = createGetter(false, true)
+const readonlyGet = createGetter(true)
 
 /**
  * @description 封装生成 ProxyHandler 的 getter
@@ -37,6 +38,8 @@ function createGetter(isReadonly = false, shallow = false) {
       // 2. 由于 get 拦截函数是在 createGetter 闭包中创建的
       //    所以一直保持着对 isReadonly 参数的访问能力
       return !isReadonly
+    } else if (key === ReactiveFlags.IS_READONLY) {
+      return isReadonly
     } else if (key === ReactiveFlags.IS_SHALLOW) {
       return shallow
     } else if (key === ReactiveFlags.RAW) {
@@ -58,8 +61,11 @@ function createGetter(isReadonly = false, shallow = false) {
     // }
     const res = Reflect.get(target, key, receiver)
 
-    // 依赖收集
-    track(target, TrackOpTypes.GET, key)
+    if (!isReadonly) {
+      // readonly 对象不允许修改属性，所以没必要收集依赖
+      // 依赖收集
+      track(target, TrackOpTypes.GET, key)
+    }
 
     if (shallow) {
       // 如果不需要嵌套的响应式对象 就直接返回
@@ -68,7 +74,7 @@ function createGetter(isReadonly = false, shallow = false) {
 
     if (isObject(res)) {
       // 如果对象属性，则将其也转成 reactive 对象
-      return reactive(res)
+      return isReadonly ? readonly(res) : reactive(res)
     }
 
     return res
@@ -166,6 +172,24 @@ export const mutableHandlers: ProxyHandler<object> = {
   deleteProperty,
   has,
   ownKeys
+}
+
+export const readonlyHandlers: ProxyHandler<object> = {
+  get: readonlyGet,
+  set(target, key) {
+    console.warn(
+      `Set operation on key "${String(key)}" failed: target is readonly.`,
+      target
+    )
+    return true
+  },
+  deleteProperty(target, key) {
+    console.warn(
+      `Delete operation on key "${String(key)}" failed: target is readonly.`,
+      target
+    )
+    return true
+  }
 }
 
 export const shallowReactiveHandlers = extend({}, mutableHandlers, {

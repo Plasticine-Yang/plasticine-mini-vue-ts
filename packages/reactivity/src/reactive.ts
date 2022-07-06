@@ -1,10 +1,15 @@
-import { mutableHandlers, shallowReactiveHandlers } from './baseHandlers'
+import {
+  mutableHandlers,
+  readonlyHandlers,
+  shallowReactiveHandlers
+} from './baseHandlers'
 
 /**
  * @description 响应式对象的类型
  */
 export const enum ReactiveFlags {
   IS_REACTIVE = '__v_isReactive',
+  IS_READONLY = '__v_isReadonly',
   IS_SHALLOW = '__v_isShallow',
   RAW = '__v_raw'
 }
@@ -14,6 +19,7 @@ export const enum ReactiveFlags {
  */
 export interface Target {
   [ReactiveFlags.IS_REACTIVE]?: boolean
+  [ReactiveFlags.IS_READONLY]?: boolean
   [ReactiveFlags.IS_SHALLOW]?: boolean
   [ReactiveFlags.RAW]?: any
 }
@@ -22,6 +28,7 @@ export interface Target {
 // 会进行缓存，如果已经存在则没必要再次创建，直接返回缓存结果
 export const reactiveMap = new WeakMap<Target, any>()
 export const shallowReactiveMap = new WeakMap<Target, any>()
+export const readonlyMap = new WeakMap<Target, any>()
 
 /**
  * @description 将普通对象包装成响应式对象
@@ -41,6 +48,10 @@ export function shallowReactive<T extends object>(target: T): T {
     shallowReactiveHandlers,
     shallowReactiveMap
   )
+}
+
+export function readonly<T extends Object>(target: T): T {
+  return createReactiveObject(target, readonlyHandlers, readonlyMap)
 }
 
 /**
@@ -79,8 +90,16 @@ export function isReactive(value: unknown): boolean {
   return !!(value && (value as Target)[ReactiveFlags.IS_REACTIVE])
 }
 
+export function isReadonly(value: unknown): boolean {
+  return !!(value && (value as Target)[ReactiveFlags.IS_READONLY])
+}
+
 export function isShallow(value: unknown): boolean {
   return !!(value && (value as Target)[ReactiveFlags.IS_SHALLOW])
+}
+
+export function isProxy(value: unknown): boolean {
+  return isReactive(value) || isReadonly(value)
 }
 
 /**
