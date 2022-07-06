@@ -25,4 +25,14 @@ describe('api: watch', () => {
 
     expect(dummy).toMatchObject([1, 0])
   })
+
+  test('immediate', () => {
+    const source = reactive({ foo: 1 })
+    const cb = jest.fn()
+    watch(source, cb, { immediate: true })
+
+    expect(cb).toHaveReturnedTimes(1)
+    source.foo++
+    expect(cb).toHaveReturnedTimes(2)
+  })
 })
