@@ -24,6 +24,10 @@
 - [x] 使用`ReactiveFlags.IS_REACTIVE`避免对已经是`reactive`的对象再次创建代理对象
 - [x] 使用`WeakMap`作为缓存表，防止对同一个原始对象多次创建代理对象，用`WeakMap`而不是`Map`是为了保证`gc`对原始对象的正常回收
 
+### readonly
+
+- [x] 支持嵌套的`readonly`
+
 ### computed
 
 - [x] `getter`懒执行，创建计算属性的时候不会立即调用`getter`，只会等到访问计算属性的时候才开始计算
