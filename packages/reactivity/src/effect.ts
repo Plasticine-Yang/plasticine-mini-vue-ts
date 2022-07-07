@@ -110,6 +110,16 @@ export function effect<T = any>(
   return runner
 }
 
+let shouldTrack = true
+
+export function pauseTracking() {
+  shouldTrack = false
+}
+
+export function enableTracking() {
+  shouldTrack = true
+}
+
 /**
  * @description 依赖收集
  * @param target 进行依赖收集的目标对象
@@ -117,7 +127,7 @@ export function effect<T = any>(
  */
 export function track(target: object, type: TrackOpTypes, key: unknown) {
   // 只在 activeEffect 不为 undefined 的时候才进行依赖收集
-  if (activeEffect) {
+  if (shouldTrack && activeEffect) {
     // 映射查找过程: target -> key -> dep
     // 从 targetMap 中找到 target 对应的 depsMap
     let depsMap = targetMap.get(target)

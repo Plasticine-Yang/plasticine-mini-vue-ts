@@ -7,7 +7,13 @@ import {
   isObject,
   isSymbol
 } from '@plasticine-mini-vue-ts/shared'
-import { ITERATE_KEY, track, trigger } from './effect'
+import {
+  enableTracking,
+  ITERATE_KEY,
+  pauseTracking,
+  track,
+  trigger
+} from './effect'
 import { TrackOpTypes, TriggerOpTypes } from './operations'
 import { reactive, ReactiveFlags, readonly, Target, toRaw } from './reactive'
 
@@ -33,6 +39,12 @@ function createArrayInstrumentations() {
   const instrumentations: Record<string, Function> = {}
 
   // 重写数组查找方法：includes、indexOf、lastIndexOf
+  // 让下面这个场景能够正常工作
+  // const obj = {}
+  // const arr = reactive([obj])
+  // arr.includes(obj) // should be true
+  // 如果不重写，arr[0] 中的是 obj 的代理对象，现在用原始对象去进行查找肯定是找不到的
+  // 需要先到原始数组中查找，找不到的话再把 obj 的代理对象用 toRaw 转成原始对象后再去查找即可，这就是重写的目的
   ;(['includes', 'indexOf', 'lastIndexOf'] as const).forEach(key => {
     instrumentations[key] = function (this: unknown[], ...args: unknown[]) {
       const arr = toRaw(this) as any
@@ -44,6 +56,25 @@ function createArrayInstrumentations() {
       } else {
         return res
       }
+    }
+  })
+
+  // 重写这些数组原型方法是因为它们会读取和隐式修改数组的 length 属性，而读取 length 属性的时候不应该
+  // 进行依赖收集，比如下面这个场景
+  // const arr = reactive([])
+  // [1] effect(() => arr.push(1))
+  // [2] effect(() => arr.push(2))
+  // [1] 的执行会触发 length 的读取，从而被作为依赖收集
+  // [2] 的执行也会触发 length 的读取，作为依赖被收集，同时还会隐式修改 length 属性，触发 set 拦截
+  // 从而导致执行 [1]，类似地，[1] 执行也会触发 set 拦截，执行 [2]
+  // 两者一直循环执行，最终导致栈溢出
+  ;(['push', 'pop', 'shift', 'unshift', 'splice'] as const).forEach(key => {
+    instrumentations[key] = function (this: unknown[], ...args: unknown[]) {
+      pauseTracking()
+      const res = (toRaw(this) as any)[key].apply(this, args)
+      enableTracking()
+
+      return res
     }
   })
 
@@ -73,7 +104,8 @@ function createGetter(isReadonly = false, shallow = false) {
 
     const targetIsArray = isArray(target)
 
-    // 访问数组的 includes、indexOf、lastIndexOf 方法时，重写这些方法
+    // 访问数组的 includes、indexOf、lastIndexOf 等查找方法，以及
+    // push、pop、shift、unshift、splice 等会隐式修改 length 的方法时，重写这些方法
     if (!isReadonly && targetIsArray && hasOwn(arrayInstrumentations, key)) {
       return Reflect.get(arrayInstrumentations, key, receiver)
     }
