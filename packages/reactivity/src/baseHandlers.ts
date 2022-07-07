@@ -27,6 +27,22 @@ const shallowGet = createGetter(false, true)
 const readonlyGet = createGetter(true)
 const shallowReadonlyGet = createGetter(true, true)
 
+const arrayInstrumentations = {}
+;['includes', 'indexOf', 'lastIndexOf'].forEach(method => {
+  const originMethod = Array.prototype[method as any]
+  ;(arrayInstrumentations as any)[method] = function (...args: any[]) {
+    // this 是代理对象，先在代理对象中查找，将结果存储到 res 中
+    let res = (originMethod as any).apply(this, args)
+
+    if (res === false || res === -1) {
+      // res 为 false 说明没有找到，通过 toRaw 拿到原始数组，再去原始数组中查找
+      res = (originMethod as any).apply(toRaw(this), args)
+    }
+
+    return res
+  }
+})
+
 /**
  * @description 封装生成 ProxyHandler 的 getter
  */
@@ -47,6 +63,14 @@ function createGetter(isReadonly = false, shallow = false) {
       // 需要获取原始对象的时候 需要访问 RAW 属性 -- __v_raw
       return target
     }
+
+    const targetIsArray = isArray(target)
+
+    // 访问数组的 includes、indexOf、lastIndexOf 方法时，重写这些方法
+    if (!isReadonly && targetIsArray && hasOwn(arrayInstrumentations, key)) {
+      return Reflect.get(arrayInstrumentations, key, receiver)
+    }
+
     // 使用 Reflect.get 而不是直接 target[key] 有两个原因:
     // 1. 能够使用 receiver 处理访问器属性中的 this 指向问题
     //    如果访问器属性中通过 this 访问了对象的别的属性，由于
