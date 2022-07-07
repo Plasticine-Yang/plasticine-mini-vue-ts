@@ -15,4 +15,23 @@ describe('reactivity/reactive/Array', () => {
     // ownKeys
     expect(Object.keys(observed)).toEqual(['0'])
   })
+
+  test('observed value should proxy mutations to original (Array)', () => {
+    const original: any[] = [{ foo: 1 }, { bar: 2 }]
+    const observed = reactive(original)
+    // set
+    const value = { baz: 3 }
+    const reactiveValue = reactive(value)
+    observed[0] = value
+    expect(observed[0]).toBe(reactiveValue)
+    expect(original[0]).toBe(value)
+    // delete
+    delete observed[0]
+    expect(observed[0]).toBeUndefined()
+    expect(original[0]).toBeUndefined()
+    // mutating methods
+    observed.push(value)
+    expect(observed[2]).toBe(reactiveValue)
+    expect(original[2]).toBe(value)
+  })
 })
