@@ -27,21 +27,28 @@ const shallowGet = createGetter(false, true)
 const readonlyGet = createGetter(true)
 const shallowReadonlyGet = createGetter(true, true)
 
-const arrayInstrumentations = {}
-;['includes', 'indexOf', 'lastIndexOf'].forEach(method => {
-  const originMethod = Array.prototype[method as any]
-  ;(arrayInstrumentations as any)[method] = function (...args: any[]) {
-    // this 是代理对象，先在代理对象中查找，将结果存储到 res 中
-    let res = (originMethod as any).apply(this, args)
+const arrayInstrumentations = createArrayInstrumentations()
 
-    if (res === false || res === -1) {
-      // res 为 false 说明没有找到，通过 toRaw 拿到原始数组，再去原始数组中查找
-      res = (originMethod as any).apply(toRaw(this), args)
+function createArrayInstrumentations() {
+  const instrumentations: Record<string, Function> = {}
+
+  // 重写数组查找方法：includes、indexOf、lastIndexOf
+  ;(['includes', 'indexOf', 'lastIndexOf'] as const).forEach(key => {
+    instrumentations[key] = function (this: unknown[], ...args: unknown[]) {
+      const arr = toRaw(this) as any
+      // 先到原数组中查找
+      const res = arr[key](...args)
+      if (res === -1 || res === false) {
+        // 原数组中没找到，说明查找的目标是代理对象，那么就把代理对象转成原始对象再查找
+        return arr[key](...args.map(toRaw))
+      } else {
+        return res
+      }
     }
+  })
 
-    return res
-  }
-})
+  return instrumentations
+}
 
 /**
  * @description 封装生成 ProxyHandler 的 getter
