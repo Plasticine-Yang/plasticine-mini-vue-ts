@@ -1,7 +1,8 @@
 import {
   mutableHandlers,
   readonlyHandlers,
-  shallowReactiveHandlers
+  shallowReactiveHandlers,
+  shallowReadonlyHandlers
 } from './baseHandlers'
 
 /**
@@ -29,6 +30,7 @@ export interface Target {
 export const reactiveMap = new WeakMap<Target, any>()
 export const shallowReactiveMap = new WeakMap<Target, any>()
 export const readonlyMap = new WeakMap<Target, any>()
+export const shallowReadonlyMap = new WeakMap<Target, any>()
 
 /**
  * @description 将普通对象包装成响应式对象
@@ -50,8 +52,16 @@ export function shallowReactive<T extends object>(target: T): T {
   )
 }
 
-export function readonly<T extends Object>(target: T): T {
+export function readonly<T extends object>(target: T): T {
   return createReactiveObject(target, readonlyHandlers, readonlyMap)
+}
+
+export function shallowReadonly<T extends object>(target: T): T {
+  return createReactiveObject(
+    target,
+    shallowReadonlyHandlers,
+    shallowReadonlyMap
+  )
 }
 
 /**

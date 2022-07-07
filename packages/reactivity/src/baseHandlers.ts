@@ -25,6 +25,7 @@ const builtInSymbols = new Set(
 const get = createGetter()
 const shallowGet = createGetter(false, true)
 const readonlyGet = createGetter(true)
+const shallowReadonlyGet = createGetter(true, true)
 
 /**
  * @description 封装生成 ProxyHandler 的 getter
@@ -203,4 +204,8 @@ export const readonlyHandlers: ProxyHandler<object> = {
 export const shallowReactiveHandlers = extend({}, mutableHandlers, {
   get: shallowGet,
   set: shallowSet
+})
+
+export const shallowReadonlyHandlers = extend({}, readonlyHandlers, {
+  get: shallowReadonlyGet
 })
