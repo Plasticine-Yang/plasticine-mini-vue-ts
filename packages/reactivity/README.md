@@ -29,7 +29,7 @@
 - [x] 支持数组对象`length`的响应式，核心在于：
   - 在索引超出数组长度的地方设置值时导致的隐式数组长度变化的依赖副作用函数执行
   - 修改数组`length`导致原来数组中大于新`length`的元素值被删除，如果有副作用函数依赖于这些元素则应当被执行
-- [x] 封装`createArrayInstrumentations`函数创建一个`arrayInstrumentations`对象，该对象以数组的查找方法(`includes`、`indexOf`、`lastIndexOf`)为`key`，对这些方法进行重写，当调用数组的这些方法时，会触发`get`拦截，使用`Reflect.get(arrayInstrumentations, key, receiver)`调用重写的数组方法，让数组的查找方法能够在响应式系统中正常工作
+- [x] 封装`createArrayInstrumentations`函数创建一个`arrayInstrumentations`对象，该对象以数组的部分原型方法(`includes`、`indexOf`、`lastIndexOf`、`push`、`pop`、`shift`、`unshift`、`splice`)为`key`，对这些方法进行重写，当调用数组的这些方法时，会触发`get`拦截，使用`Reflect.get(arrayInstrumentations, key, receiver)`调用重写的数组方法，让数组的查找方法能够在响应式系统中正常工作
 
 ### readonly
 
