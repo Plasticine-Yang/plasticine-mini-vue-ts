@@ -29,6 +29,7 @@
 ### readonly
 
 - [x] 支持嵌套的`readonly`
+- [x] 支持`shallowReadonly`
 
 ### computed
 
