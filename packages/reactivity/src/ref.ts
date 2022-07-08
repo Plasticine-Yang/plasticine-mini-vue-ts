@@ -1,3 +1,6 @@
+import { createDep, Dep } from './dep'
+import { trackEffects, triggerEffects } from './effect'
+
 declare const RefSymbol: unique symbol
 
 interface Ref<T = any> {
@@ -32,6 +35,7 @@ function createRef(rawRalue: unknown) {
 class RefImpl<T> {
   private _value: T
 
+  public dep?: Dep
   public readonly __v_isRef = true
 
   constructor(value: T) {
@@ -39,10 +43,17 @@ class RefImpl<T> {
   }
 
   get value() {
+    // 收集依赖
+    trackEffects(this.dep || (this.dep = createDep()))
     return this._value
   }
 
   set value(newVal) {
     this._value = newVal
+
+    if (this.dep) {
+      // 触发依赖
+      triggerEffects(this.dep)
+    }
   }
 }
