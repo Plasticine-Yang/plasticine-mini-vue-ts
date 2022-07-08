@@ -1,6 +1,6 @@
 import { effect } from '../src/effect'
 import { reactive } from '../src/reactive'
-import { isRef, ref, toRef, toRefs, unref } from '../src/ref'
+import { isRef, proxyRefs, ref, toRef, toRefs, unref } from '../src/ref'
 
 describe('reactivity/ref', () => {
   test('should hold a value', () => {
@@ -126,5 +126,13 @@ describe('reactivity/ref', () => {
   test('unref', () => {
     expect(unref(1)).toBe(1)
     expect(unref(ref(1))).toBe(1)
+  })
+
+  test('proxyRefs', () => {
+    const obj = reactive({ foo: 1 })
+    const newObj = proxyRefs({ ...toRefs(obj) })
+
+    // 不需要通过 newObj.foo.value 去访问值
+    expect(newObj.foo).toBe(1)
   })
 })

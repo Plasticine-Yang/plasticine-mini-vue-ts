@@ -1,7 +1,7 @@
 import { hasChanged } from '@plasticine-mini-vue-ts/shared'
 import { createDep, Dep } from './dep'
 import { trackEffects, triggerEffects } from './effect'
-import { toRaw, toReactive } from './reactive'
+import { isReactive, toRaw, toReactive } from './reactive'
 
 declare const RefSymbol: unique symbol
 
@@ -125,4 +125,26 @@ export function toRefs<T extends object>(object: T): ToRefs<T> {
 
 export function unref<T>(ref: T | Ref<T>): T {
   return isRef(ref) ? (ref.value as any) : ref
+}
+
+const shallowUnwrapHandlers: ProxyHandler<any> = {
+  get: (target, key, receiver) => unref(Reflect.get(target, key, receiver)),
+  set: (target, key, value, receiver) => {
+    // 要特殊处理一下旧值是 ref 而新值是普通值得情况
+    // 如果直接赋值会导致原本是 ref 的旧值丢失响应式特性
+    const oldValue = target[key]
+    if (isRef(oldValue) && !isRef(value)) {
+      oldValue.value = value
+      return true
+    } else {
+      // 其他情况可以直接赋值
+      return Reflect.set(target, key, value, receiver)
+    }
+  }
+}
+
+export function proxyRefs<T extends object>(objectWithRefs: T) {
+  return isReactive(objectWithRefs)
+    ? objectWithRefs
+    : new Proxy(objectWithRefs, shallowUnwrapHandlers)
 }
