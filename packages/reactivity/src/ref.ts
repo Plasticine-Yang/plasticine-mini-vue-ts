@@ -71,3 +71,25 @@ class RefImpl<T> {
     }
   }
 }
+
+class ObjectRefImpl<T extends object, K extends keyof T> {
+  public readonly __v_isRef = true
+
+  constructor(private readonly _object: T, private readonly _key: K) {}
+
+  get value() {
+    return this._object[this._key]
+  }
+
+  set value(newVal) {
+    this._object[this._key] = newVal
+  }
+}
+
+export function toRef<T extends object, K extends keyof T>(
+  object: T,
+  key: K
+): Ref<T[K]> {
+  const val = object[key]
+  return isRef(val) ? val : (new ObjectRefImpl(object, key) as any)
+}
