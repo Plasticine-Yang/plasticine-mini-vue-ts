@@ -86,10 +86,39 @@ class ObjectRefImpl<T extends object, K extends keyof T> {
   }
 }
 
+type ToRef<T> = Ref<T>
+
+/**
+ * 将响应式对象的属性转成 ref，用于将属性脱离响应式对象时仍能保持响应式的特性
+ * @param object 响应式对象
+ * @param key 属性
+ */
 export function toRef<T extends object, K extends keyof T>(
   object: T,
   key: K
-): Ref<T[K]> {
+): ToRef<T[K]> {
   const val = object[key]
   return isRef(val) ? val : (new ObjectRefImpl(object, key) as any)
+}
+
+type ToRefs<T = any> = {
+  [K in keyof T]: ToRef<T[K]>
+}
+
+/**
+ * 批量将响应式对象的属性转成 ref，这在 setup 中返回需要在模板中使用的响应式对象的属性时特别有用
+ * 比如有一个响应式对象 const obj = reactive({ foo: 1, bar: 2, baz: 3 })
+ * 现在希望在模板中使用 foo bar baz 三个变量，如果不将它们脱离出来，那么只能在
+ * setup 中直接返回 obj，然后在模板中通过 {{ obj.foo }} 这样的方式使用
+ * 而有了 toRefs 后，就可以在 setup 中这样返回：return { ...toRefs(obj) }
+ * 这样一来在模板中就可以直接使用了 -- {{ foo }}
+ * @param object 响应式对象
+ */
+export function toRefs<T extends object>(object: T): ToRefs<T> {
+  const ret: any = {}
+  for (const key in object) {
+    ret[key] = toRef(object, key)
+  }
+
+  return ret
 }
