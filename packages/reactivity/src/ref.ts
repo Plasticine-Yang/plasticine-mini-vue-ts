@@ -122,3 +122,7 @@ export function toRefs<T extends object>(object: T): ToRefs<T> {
 
   return ret
 }
+
+export function unref<T>(ref: T | Ref<T>): T {
+  return isRef(ref) ? (ref.value as any) : ref
+}

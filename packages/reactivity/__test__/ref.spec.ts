@@ -1,6 +1,6 @@
 import { effect } from '../src/effect'
 import { reactive } from '../src/reactive'
-import { isRef, ref, toRef, toRefs } from '../src/ref'
+import { isRef, ref, toRef, toRefs, unref } from '../src/ref'
 
 describe('reactivity/ref', () => {
   test('should hold a value', () => {
@@ -121,5 +121,10 @@ describe('reactivity/ref', () => {
     a.y = 5
     expect(dummyX).toBe(4)
     expect(dummyY).toBe(5)
+  })
+
+  test('unref', () => {
+    expect(unref(1)).toBe(1)
+    expect(unref(ref(1))).toBe(1)
   })
 })
