@@ -17,7 +17,7 @@ type RefBase<T> = {
   value: T
 }
 
-function isRef(r: any): r is Ref {
+export function isRef(r: any): r is Ref {
   return !!(r && r.__v_isRef === true)
 }
 
