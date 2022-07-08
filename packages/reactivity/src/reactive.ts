@@ -1,3 +1,4 @@
+import { isObject } from '@plasticine-mini-vue-ts/shared'
 import {
   mutableHandlers,
   readonlyHandlers,
@@ -123,3 +124,6 @@ export function toRaw<T>(observed: T): T {
   // 可能仍然是代理对象，递归地获取直到不存在 RAW 原始对象
   return raw ? toRaw(raw) : observed
 }
+
+export const toReactive = <T extends unknown>(value: T): T =>
+  isObject(value) ? reactive(value) : value
