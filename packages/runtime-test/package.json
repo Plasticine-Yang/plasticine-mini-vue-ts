@@ -1,0 +1,15 @@
+{
+  "name": "@plasticine-mini-vue-ts/runtime-test",
+  "version": "1.0.0",
+  "description": "@plasticine-mini-vue-ts",
+  "main": "index.js",
+  "scripts": {
+    "dev": "jest -c ../../jest.config.js --watch",
+    "test": "jest -c ../../jest.config.js"
+  },
+  "keywords": [
+    "plasticine-mini-vue-ts"
+  ],
+  "author": "Plasticine",
+  "license": "ISC"
+}
