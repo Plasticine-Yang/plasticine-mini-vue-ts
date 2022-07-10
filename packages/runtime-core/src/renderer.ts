@@ -4,7 +4,7 @@ export interface Renderer<HostElement = RendererElement> {
   render: RootRenderFunction<HostElement>
 }
 
-interface RendererNode {
+export interface RendererNode {
   [key: string]: any
 }
 
@@ -36,6 +36,8 @@ export interface RendererOptions<
   insert(el: HostNode, parent: HostElement): void
   // 用于更新元素的属性
   patchProp(el: HostElement, key: string, prevValue: any, nextValue: any): void
+  // 移除元素
+  remove(el: HostNode): void
 }
 
 // patch 打补丁函数的类型
@@ -44,6 +46,8 @@ type PatchFn = (
   n2: VNode,
   container: RendererElement
 ) => void
+
+type UnmountFn = (vnode: VNode) => void
 
 export function createRenderer<
   HostNode = RendererNode,
@@ -54,7 +58,8 @@ export function createRenderer<
     createElement: hostCreateElement,
     setElementText: hostSetElementText,
     insert: hostInsert,
-    patchProp: hostPatchProp
+    patchProp: hostPatchProp,
+    remove: hostRemove
   } = options
 
   /**
@@ -78,7 +83,8 @@ export function createRenderer<
   const mountElement = (vnode: VNode, container: RendererElement) => {
     // 创建 DOM 元素 -- 可以抽象成与 DOM 无关的接口从而实现跨平台
     // const el = document.createElement(vnode.type as string)
-    const el = hostCreateElement(vnode.type as string)
+    // 创建元素的同时还要将其赋值到 vnode.el 上，这样就能够在别的地方通过 vnode 直接获取对真实 DOM 元素的引用
+    const el = (vnode.el = hostCreateElement(vnode.type as string))
     const { props } = vnode
 
     // 处理子节点
@@ -102,6 +108,11 @@ export function createRenderer<
     hostInsert(el, container)
   }
 
+  const unmount: UnmountFn = vnode => {
+    // 调用自定义渲染器中的实现将 vnode 卸载
+    hostRemove(vnode)
+  }
+
   /**
    * @description 核心渲染函数
    * @param vnode 虚拟结点
@@ -111,7 +122,16 @@ export function createRenderer<
     if (vnode === null) {
       // 没有新的 vnode -- 说明是要进行卸载操作
       if (container._vnode) {
-        container.innerHTML = ''
+        // 通过这种直接将 `innerHTML = ''` 的方式卸载 vnode 是不对的，存在以下几个问题
+        // 1. 容器的内容可能是由某个或多个组件渲染的，当卸载操作发生时
+        //    应该正确地调用这些组件的 beforeUnmount、unmounted 等生命周期函数
+        // 2. 即使内容不是由组件渲染的，有的元素存在自定义指令，我们应该在卸载
+        //    操作发生时正确执行对应的指令钩子函数
+        // 3. 不能移除绑定在 DOM 元素上的事件处理函数
+        // 并且由于要考虑到渲染的通用性，所以要将卸载的操作转移到自定义渲染器中
+        // 调用自定义渲染器实现的移除元素的实现去卸载元素
+        // container.innerHTML = '' // <-- 这种方式卸载元素有缺陷
+        unmount(container._vnode)
       }
     } else {
       // 如果有 vnode 则对其进行打补丁

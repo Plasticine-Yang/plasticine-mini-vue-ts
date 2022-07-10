@@ -9,17 +9,24 @@ const doc = (typeof document !== 'undefined' ? document : null) as Document
  * 所以放到单独的一个文件中去实现
  */
 export const nodeOps: Omit<RendererOptions<Node, Element>, 'patchProp'> = {
-  createElement(tag): Element {
+  createElement: (tag): Element => {
     const el = doc.createElement(tag)
 
     return el
   },
 
-  setElementText(el, text) {
+  setElementText: (el, text) => {
     el.textContent = text
   },
 
-  insert(child, parent) {
+  insert: (child, parent) => {
     parent.appendChild(child)
+  },
+
+  remove: child => {
+    const parent = child.parentNode
+    if (parent) {
+      parent.removeChild(child)
+    }
   }
 }

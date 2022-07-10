@@ -1,3 +1,5 @@
+import { RendererNode } from './renderer'
+
 const Text = Symbol()
 const Comment = Symbol()
 const Fragment = Symbol()
@@ -8,8 +10,9 @@ type VNodeProps = {
   [key: string]: any
 }
 
-export interface VNode {
+export interface VNode<HostNode = RendererNode> {
   type: VNodeTypes
   props: VNodeProps
   children: string | any[]
+  el: HostNode | null
 }
