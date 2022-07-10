@@ -1,0 +1,15 @@
+{
+  "name": "@plasticine-mini-vue-ts/runtime-dom",
+  "version": "1.0.0",
+  "description": "@plasticine-mini-vue-ts/runtime-dom",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@plasticine-mini-vue-ts/runtime-core": "1.0.0"
+  }
+}
