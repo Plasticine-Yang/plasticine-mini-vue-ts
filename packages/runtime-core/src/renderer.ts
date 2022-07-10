@@ -1,4 +1,4 @@
-import { VNode } from './vnode'
+import { isSameVNodeType, VNode } from './vnode'
 
 export interface Renderer<HostElement = RendererElement> {
   render: RootRenderFunction<HostElement>
@@ -72,11 +72,25 @@ export function createRenderer<
     // 新旧 vnode 相同没必要打补丁
     if (n1 === n2) return
 
-    if (n1 === null) {
-      // 旧 vnode 不存在 -- 说明要挂载新 vnode 也就是 n2
-      mountElement(n2, container)
-    } else {
-      // n1 存在则进行打补丁
+    // 类型不相同的时候需要卸载旧的 vnode
+    if (n1 && !isSameVNodeType(n1, n2)) {
+      unmount(n1)
+      n1 = null
+    }
+
+    // 代码来到这里说明 n1 和 n2 是相同类型
+    const { type } = n2
+
+    if (typeof type === 'string') {
+      // 字符串类型则是普通标签元素，也就是 Element 类型
+      if (!n1) {
+        // 旧 vnode 不存在 -- 说明要挂载新 vnode 也就是 n2
+        mountElement(n2, container)
+      } else {
+        // n1 存在即新旧 vnode 都存在 -- 进行打补丁更新 vnode
+      }
+    } else if (typeof type === 'object') {
+      // 如果 type 是对象则描述的是组件类型的 vnode
     }
   }
 

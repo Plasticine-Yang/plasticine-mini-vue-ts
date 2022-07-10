@@ -16,3 +16,8 @@ export interface VNode<HostNode = RendererNode> {
   children: string | any[]
   el: HostNode | null
 }
+
+// 判断两个 vnode 是否是相同类型
+export function isSameVNodeType(n1: VNode, n2: VNode): boolean {
+  return n1.type === n2.type
+}
