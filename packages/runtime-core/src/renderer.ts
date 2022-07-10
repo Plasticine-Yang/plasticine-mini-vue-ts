@@ -34,6 +34,8 @@ export interface RendererOptions<
   // 只有 Element 中才能容纳别的结点 比如 <div><p>hello</p></div>
   // 而 Text 和 Comment 类型的结点是不能存放子节点的，所以 parent 需要是 Element 类型
   insert(el: HostNode, parent: HostElement): void
+  // 用于更新元素的属性
+  patchProp(el: HostElement, key: string, prevValue: any, nextValue: any): void
 }
 
 // patch 打补丁函数的类型
@@ -46,7 +48,7 @@ type PatchFn = (
 export function createRenderer<
   HostNode = RendererNode,
   HostElement = RendererElement
->(options: RendererOptions<HostNode, HostElement>) {
+>(options: RendererOptions): Renderer<HostElement> {
   // 将自定义渲染器接口抽象成 options 供外界调用者进行个性化配置
   const {
     createElement: hostCreateElement,
