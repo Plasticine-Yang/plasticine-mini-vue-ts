@@ -10,6 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@plasticine-mini-vue-ts/shared": "1.0.0",
     "@plasticine-mini-vue-ts/runtime-core": "1.0.0"
   }
 }

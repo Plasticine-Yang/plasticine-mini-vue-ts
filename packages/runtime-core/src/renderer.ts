@@ -53,7 +53,8 @@ export function createRenderer<
   const {
     createElement: hostCreateElement,
     setElementText: hostSetElementText,
-    insert: hostInsert
+    insert: hostInsert,
+    patchProp: hostPatchProp
   } = options
 
   /**
@@ -78,12 +79,24 @@ export function createRenderer<
     // 创建 DOM 元素 -- 可以抽象成与 DOM 无关的接口从而实现跨平台
     // const el = document.createElement(vnode.type as string)
     const el = hostCreateElement(vnode.type as string)
+    const { props } = vnode
+
     // 处理子节点
     if (typeof vnode.children === 'string') {
       // 如果子节点是字符串则意味着元素具有文本结点
       // el.textContent = vnode.children
       hostSetElementText(el, vnode.children as string)
     }
+
+    // 处理 props
+    if (props) {
+      // 遍历 key 调用 hostPatchProp 去处理属性的更新
+      for (const key in props) {
+        // 由于是 mountElement，元素是首次被挂载 所以不存在旧 prop
+        hostPatchProp(el, key, null, props[key])
+      }
+    }
+
     // 将元素添加到容器中
     // container.appendChild(el)
     hostInsert(el, container)
