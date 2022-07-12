@@ -139,11 +139,32 @@ function insert(child: TestNode, parent: TestElement, ref?: TestNode | null) {
   }
 }
 
+function setElementText(el: TestElement, text: string) {
+  // 每次设置元素的文本内容的时候都要将已有的孩子的父节点引用清空
+  // 因为设置元素文本后，旧孩子就没有意义了，新孩子一定会是文本
+  el.children.forEach(c => {
+    c.parentNode = null
+  })
+  if (!text) {
+    el.children = []
+  } else {
+    el.children = [
+      {
+        id: nodeId++,
+        type: NodeTypes.TEXT,
+        text,
+        parentNode: el
+      }
+    ]
+  }
+}
+
 // 在 NodeJS 中模拟的 DOM 环境操作
 export const nodeOps = {
   createElement,
   createText,
   createComment,
   remove,
-  insert
+  insert,
+  setElementText
 }

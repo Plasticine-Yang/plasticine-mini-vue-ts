@@ -1,4 +1,5 @@
 import { nodeOps, NodeTypes, TestElement, TestText } from '../src/nodeOps'
+import { h, render } from '../src'
 
 describe('test renderer', () => {
   test('should work', () => {
