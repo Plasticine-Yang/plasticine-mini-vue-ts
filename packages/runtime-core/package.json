@@ -11,5 +11,8 @@
     "plasticine-mini-vue-ts"
   ],
   "author": "Plasticine",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "@plasticine-mini-vue-ts/reactivity": "1.0.0"
+  }
 }

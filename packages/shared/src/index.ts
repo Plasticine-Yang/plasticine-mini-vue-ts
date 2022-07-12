@@ -1,3 +1,7 @@
+// 判断是否是事件监听属性
+const onRE = /^on[^a-z]/
+export const isOn = (key: string) => onRE.test(key)
+
 export const extend = Object.assign
 
 const hasOwnProperty = Object.prototype.hasOwnProperty
